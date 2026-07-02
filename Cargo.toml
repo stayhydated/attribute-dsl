@@ -1,0 +1,15 @@
+[package]
+name = "attribute-dsl"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT OR Apache-2.0"
+publish = true
+readme = "README.md"
+description = "Shared parser helpers for Rust attribute DSLs built from paths and dot-call chains."
+repository = "https://github.com/stayhydated/attribute-dsl"
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { features = [ "extra-traits", "full", "parsing", "printing", "visit-mut" ], version = "2.0" }
