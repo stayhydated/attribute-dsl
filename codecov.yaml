@@ -11,4 +11,4 @@ component_management:
 coverage:
   precision: 2
   round: down
-  range: "75...100"
+  range: "90...100"
