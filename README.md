@@ -1,11 +1,80 @@
 # attribute-dsl
 
+[![Build Status](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg)](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/github/stayhydated/attribute-dsl/graph/badge.svg)](https://codecov.io/github/stayhydated/attribute-dsl)
+[![Docs](https://docs.rs/attribute-dsl/badge.svg)](https://docs.rs/attribute-dsl/)
+[![Crates.io](https://img.shields.io/crates/v/attribute-dsl.svg)](https://crates.io/crates/attribute-dsl)
+
 Shared parser helpers for Rust proc-macro attribute DSLs built from path roots,
 dot-call chains, and comma-separated entries.
 
 This crate is intended for derive and attribute macro implementation crates.
 
-## Example
+## Parsed Model
+
+The core parser accepts a Rust path root followed by zero or more method calls:
+
+```text
+AttributeChain := Path ("." Ident Turbofish? "(" Expr,* ")")* CompletionProbe?
+CompletionProbe := "." CompletionMarker
+
+ChainEntry     := Ident "=" AttributeChain | AttributeChain
+ChainList      := ChainEntry ("," ChainEntry)* ","?
+NamedChainGroup := Ident "(" ChainList ")"
+```
+
+Examples of accepted chain shapes:
+
+```text
+RangeValidation::<_>
+validators::RangeValidation::<_>.min(0).max(100)
+Validator.map::<String>(value)
+RangeValidation::<_>.
+RangeValidation::<_>.min(0).raCompletionMarker
+```
+
+The root is kept as a `syn::Path`. Each dot-call is represented as a
+`ChainCall` containing the method `Ident`, optional turbofish, and call
+arguments as `syn::Expr` values. Parser errors are reported as `syn::Error`.
+
+Associated constructors and other expression forms belong in the generated code
+around the parsed root. For example, parse `StringFaker` as the root, then emit
+`StringFaker::builder()` from your macro expansion.
+
+## Quick Parsing
+
+```rust
+use attribute_dsl::{AttributeChain, ChainCompletion, ChainList, NamedChainGroup};
+use syn::parse_str;
+
+let chain: AttributeChain =
+    parse_str("validators::RangeValidation::<_>.min(0).max(100)")?;
+
+assert_eq!(
+    chain.root_path().segments.last().unwrap().ident.to_string(),
+    "RangeValidation"
+);
+assert_eq!(chain.calls().len(), 2);
+assert_eq!(chain.calls()[0].method().to_string(), "min");
+assert_eq!(chain.calls()[1].method().to_string(), "max");
+assert!(matches!(chain.completion(), ChainCompletion::None));
+
+let list: ChainList = parse_str(
+    "first = Validator::<_>.min(1), Validator::<String>, built = Faker.weight(2)",
+)?;
+assert_eq!(list.entries().len(), 3);
+assert_eq!(list.entries()[0].label().unwrap().to_string(), "first");
+assert!(list.entries()[1].label().is_none());
+
+let group: NamedChainGroup =
+    parse_str("each(tag = TagFaker.length(8), OtherFaker)")?;
+assert_eq!(group.name().to_string(), "each");
+assert_eq!(group.entries().len(), 2);
+
+# Ok::<(), syn::Error>(())
+```
+
+## Derive Macro Example
 
 ```rust
 use attribute_dsl::{AttributeChain, substitute_infer_in_path};
@@ -106,6 +175,10 @@ fn compact(tokens: &TokenStream) -> String {
 }
 ```
 
+The example parses `#[attribute_dsl(RootType::<_>.first(1).)]`, substitutes the
+field type for `_` in the root path, preserves the parsed method calls, and emits
+a typed completion probe expression for rust-analyzer.
+
 ## Completion Probe
 
 Incomplete input such as `RootType::<_>.` is parsed as if it ended with
@@ -120,15 +193,102 @@ Consumers that accept complete chains but do not emit typed probe code can parse
 with `ChainParseOptions::new().allow_completion_probe(CompletionProbeParsing::Disabled)`
 to reject both trailing-dot recovery and explicit marker syntax.
 
-## What Stays Outside
+```rust
+use attribute_dsl::{AttributeChain, ChainParseOptions, CompletionProbeParsing};
+use quote::quote;
 
-Consumers still own their domain grammar:
+let options = ChainParseOptions::new().completion_marker("completeHere");
+let chain = AttributeChain::parse_tokens_with_options(
+    quote!(RangeValidation::<_>.min(0).),
+    &options,
+)?;
 
-- reserved words and other domain-specific identifiers;
-- how parsed completion probes are handled;
-- method arity and reserved method names;
-- labels and generated API naming;
-- runtime semantics for parsed roots, labels, entries, and calls.
+assert!(chain.has_completion_probe());
+assert_eq!(
+    chain.completion_marker().unwrap().to_string(),
+    "completeHere"
+);
 
-The crate also exposes `_` substitution helpers for paths, types, and
-expressions, plus a helper for splitting a path's terminal single type argument.
+let strict = ChainParseOptions::new()
+    .allow_completion_probe(CompletionProbeParsing::Disabled);
+assert!(
+    AttributeChain::parse_tokens_with_options(
+        quote!(RangeValidation::<_>.min(0).),
+        &strict,
+    )
+    .is_err()
+);
+
+# Ok::<(), syn::Error>(())
+```
+
+Completion probes are also recognized before a comma in a `ChainList`, which
+lets an attribute parser recover a partially typed entry while preserving the
+remaining entries.
+
+## Infer Helpers
+
+Many attribute DSLs use `_` as a placeholder for a subject type, such as the
+field type in a derive macro. This crate provides helpers that operate directly
+on `syn` syntax trees:
+
+- `split_terminal_single_type_arg(path, subject)` removes the final path
+  segment's single type argument and returns `SingleTypeArg::None`,
+  `SingleTypeArg::Infer`, or `SingleTypeArg::Explicit`.
+- `substitute_infer_in_path(path, replacement)` substitutes `_` inside path
+  arguments.
+- `substitute_infer_in_type(ty, replacement)` substitutes `_` inside supported
+  `syn::Type` forms, including arrays, slices, pointers, function types, trait
+  objects, `impl Trait`, tuples, references, parenthesized types, and grouped
+  types.
+- `substitute_infer_in_expr(expr, replacement)` visits expression syntax and
+  substitutes `_` in nested paths and types.
+
+```rust
+use attribute_dsl::{
+    split_terminal_single_type_arg, substitute_infer_in_expr, substitute_infer_in_path,
+    substitute_infer_in_type,
+};
+use quote::ToTokens as _;
+use syn::{Expr, Path, Type, parse_quote};
+
+let path: Path = parse_quote!(crate::RangeValidation::<_>);
+let (base_path, type_arg) = split_terminal_single_type_arg(path, "validator")?;
+
+assert_eq!(
+    base_path.segments.last().unwrap().ident.to_string(),
+    "RangeValidation"
+);
+assert!(type_arg.is_infer());
+
+let replacement: Type = parse_quote!(String);
+
+let path: Path = parse_quote!(crate::Input<Option<_>>);
+let substituted_path = substitute_infer_in_path(&path, &replacement);
+assert!(
+    substituted_path
+        .to_token_stream()
+        .to_string()
+        .contains("String")
+);
+
+let ty: Type = parse_quote!(fn([_; 2], &[_]) -> Option<_>);
+let substituted_type = substitute_infer_in_type(&ty, &replacement);
+assert!(
+    substituted_type
+        .to_token_stream()
+        .to_string()
+        .contains("String")
+);
+
+let expr: Expr = parse_quote!(crate::Select::<_>.searchable(true));
+let substituted_expr = substitute_infer_in_expr(&expr, &replacement);
+assert!(
+    substituted_expr
+        .to_token_stream()
+        .to_string()
+        .contains("String")
+);
+
+# Ok::<(), syn::Error>(())
+```

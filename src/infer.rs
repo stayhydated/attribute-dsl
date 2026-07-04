@@ -248,6 +248,20 @@ mod tests {
             .collect()
     }
 
+    fn parenthesized_path(output: Type) -> Path {
+        let mut inputs = syn::punctuated::Punctuated::new();
+        inputs.push(parse_quote!(_));
+
+        Path::from(syn::PathSegment {
+            ident: parse_quote!(FnOnce),
+            arguments: PathArguments::Parenthesized(syn::ParenthesizedGenericArguments {
+                paren_token: Default::default(),
+                inputs,
+                output: syn::ReturnType::Type(Default::default(), Box::new(output)),
+            }),
+        })
+    }
+
     #[test]
     fn splits_terminal_single_type_arg() {
         let path: Path = parse_quote!(crate::RangeValidation::<_>);
@@ -261,24 +275,144 @@ mod tests {
     }
 
     #[test]
+    fn splits_absent_terminal_type_arg_and_rejects_invalid_args() {
+        let path: Path = parse_quote!(crate::RangeValidation);
+        let (path, arg) = split_terminal_single_type_arg(path, "validator").expect("valid path");
+        assert_eq!(compact(&path), "crate::RangeValidation");
+        assert!(!arg.is_infer());
+        assert!(arg.explicit_type().is_none());
+
+        let path: Path = parse_quote!(crate::RangeValidation::<i32, String>);
+        let err = split_terminal_single_type_arg(path, "validator").expect_err("too many args");
+        assert!(
+            err.to_string()
+                .contains("validator type syntax expects exactly one type argument"),
+            "{err}"
+        );
+
+        let path: Path = parse_quote!(crate::RangeValidation::<3>);
+        let err = split_terminal_single_type_arg(path, "validator").expect_err("const arg");
+        assert!(
+            err.to_string()
+                .contains("validator type syntax expects a type argument"),
+            "{err}"
+        );
+
+        let path = parenthesized_path(parse_quote!(i32));
+        let err = split_terminal_single_type_arg(path, "validator").expect_err("function args");
+        assert!(
+            err.to_string()
+                .contains("validator path does not support parenthesized arguments"),
+            "{err}"
+        );
+    }
+
+    #[test]
     fn substitutes_infer_in_paths_types_and_exprs() {
         let replacement: Type = parse_quote!(String);
         let path: Path = parse_quote!(crate::Input<Option<_>>);
         assert_eq!(
-            compact(&substitute_infer_in_path(&path, &replacement)),
+            compact(substitute_infer_in_path(&path, &replacement)),
             "crate::Input<Option<String>>"
         );
 
         let ty: Type = parse_quote!(fn([_; 2], &[_]) -> Option<_>);
         assert_eq!(
-            compact(&substitute_infer_in_type(&ty, &replacement)),
+            compact(substitute_infer_in_type(&ty, &replacement)),
             "fn([String;2],&[String])->Option<String>"
         );
 
         let expr: Expr = parse_quote!(crate::Select::<_>.searchable(true));
         assert_eq!(
-            compact(&substitute_infer_in_expr(&expr, &replacement)),
+            compact(substitute_infer_in_expr(&expr, &replacement)),
             "crate::Select::<String>.searchable(true)"
+        );
+    }
+
+    #[test]
+    fn substitutes_infer_in_additional_type_forms() {
+        let replacement: Type = parse_quote!(String);
+
+        let ptr: Type = parse_quote!(*const _);
+        assert_eq!(
+            compact(substitute_infer_in_type(&ptr, &replacement)),
+            "*constString"
+        );
+
+        let trait_object: Type = parse_quote!(dyn Iterator<Item = _> + Send);
+        assert_eq!(
+            compact(substitute_infer_in_type(&trait_object, &replacement)),
+            "dynIterator<Item=String>+Send"
+        );
+
+        let impl_trait: Type = parse_quote!(impl Into<_> + Send);
+        assert_eq!(
+            compact(substitute_infer_in_type(&impl_trait, &replacement)),
+            "implInto<String>+Send"
+        );
+
+        let tuple: Type = parse_quote!((_, Option<_>));
+        assert_eq!(
+            compact(substitute_infer_in_type(&tuple, &replacement)),
+            "(String,Option<String>)"
+        );
+
+        let paren: Type = parse_quote!((Option<_>));
+        assert_eq!(
+            compact(substitute_infer_in_type(&paren, &replacement)),
+            "(Option<String>)"
+        );
+
+        let group = Type::Group(syn::TypeGroup {
+            group_token: Default::default(),
+            elem: Box::new(parse_quote!(Option<_>)),
+        });
+        assert_eq!(
+            compact(substitute_infer_in_type(&group, &replacement)),
+            "Option<String>"
+        );
+
+        let never: Type = parse_quote!(!);
+        assert_eq!(compact(substitute_infer_in_type(&never, &replacement)), "!");
+    }
+
+    #[test]
+    fn substitutes_infer_in_path_argument_variants() {
+        let replacement: Type = parse_quote!(String);
+
+        let parenthesized = parenthesized_path(parse_quote!(_));
+        assert_eq!(
+            compact(substitute_infer_in_path(&parenthesized, &replacement)),
+            "FnOnce(String)->String"
+        );
+
+        let assoc_type: Path = parse_quote!(Trait<Assoc<_> = Result<_, _>>);
+        assert_eq!(
+            compact(substitute_infer_in_path(&assoc_type, &replacement)),
+            "Trait<Assoc<String>=Result<String,String>>"
+        );
+
+        let constraint: Path = parse_quote!(Trait<Assoc<_>: Into<_> + From<_>>);
+        assert_eq!(
+            compact(substitute_infer_in_path(&constraint, &replacement)),
+            "Trait<Assoc<String>:Into<String>+From<String>>"
+        );
+
+        let lifetime_and_const: Path = parse_quote!(Trait<'static, 3, _>);
+        assert_eq!(
+            compact(substitute_infer_in_path(&lifetime_and_const, &replacement)),
+            "Trait<'static,3,String>"
+        );
+    }
+
+    #[test]
+    fn substitutes_infer_inside_expression_types() {
+        let replacement: Type = parse_quote!(String);
+        let expr: Expr = parse_quote!(value as *const _);
+
+        assert_eq!(
+            compact(substitute_infer_in_expr(&expr, &replacement)),
+            "valueas*constString"
         );
     }
 }

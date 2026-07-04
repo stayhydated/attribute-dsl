@@ -422,7 +422,7 @@ fn invalid_chain_syntax_error(input: ParseStream<'_>) -> Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use syn::parse_str;
+    use syn::{parse_quote, parse_str};
 
     fn compact(tokens: impl quote::ToTokens) -> String {
         tokens
@@ -450,6 +450,33 @@ mod tests {
     }
 
     #[test]
+    fn parses_root_only_chain_and_accessors() {
+        let chain: AttributeChain =
+            parse_str("::validators::RangeValidation").expect("root-only chain should parse");
+
+        assert_eq!(compact(chain.root_path()), "::validators::RangeValidation");
+        assert!(matches!(chain.completion(), ChainCompletion::None));
+        assert!(chain.completion_marker().is_none());
+        assert!(!chain.has_completion_probe());
+        let _span = chain.span();
+    }
+
+    #[test]
+    fn parses_method_turbofish_and_entry_accessors() {
+        let entry: ChainEntry =
+            parse_str("field = Validator.map::<String>(value)").expect("labeled entry");
+
+        assert_eq!(entry.label().map(ToString::to_string), Some("field".into()));
+        let chain = entry.chain();
+        assert_eq!(chain.calls().len(), 1);
+        assert_eq!(chain.calls()[0].method().to_string(), "map");
+        assert!(chain.calls()[0].turbofish().is_some());
+
+        let chain = entry.into_chain();
+        assert_eq!(compact(&chain), "Validator.map::<String>(value)");
+    }
+
+    #[test]
     fn rejects_associated_call_root_dot_chain() {
         let result = parse_str::<AttributeChain>("StringFaker::builder().with_min_length(5)");
 
@@ -461,6 +488,42 @@ mod tests {
         assert!(parse_str::<AttributeChain>("1u8..=3u8").is_err());
         assert!(parse_str::<AttributeChain>("\"legacy shorthand\"").is_err());
         assert!(parse_str::<AttributeChain>("make_faker() + other").is_err());
+        assert!(parse_str::<AttributeChain>("left + right.").is_err());
+        assert!(parse_str::<AttributeChain>("RangeValidation::<_>..").is_err());
+    }
+
+    #[test]
+    fn rejects_empty_chain() {
+        let result = parse_str::<AttributeChain>("");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_field_expressions_that_are_not_completion_markers() {
+        assert!(parse_str::<AttributeChain>("true.raCompletionMarker").is_err());
+        assert!(parse_str::<AttributeChain>("RangeValidation.0").is_err());
+        assert!(parse_str::<AttributeChain>("RangeValidation.field").is_err());
+    }
+
+    #[test]
+    fn analyzes_parenthesized_and_grouped_chain_expressions() {
+        let chain: AttributeChain =
+            parse_str("(RangeValidation::<_>.min(0))").expect("parenthesized chain");
+        assert_eq!(compact(&chain), "RangeValidation::<_>.min(0)");
+
+        let expr = Expr::Group(syn::ExprGroup {
+            attrs: Vec::new(),
+            group_token: Default::default(),
+            expr: Box::new(parse_quote!(RangeValidation::<_>)),
+        });
+        let (root, calls, completion) =
+            analyze_chain_expr(&expr, true, &ChainParseOptions::default())
+                .expect("group analysis should parse")
+                .expect("grouped path should be a chain");
+        assert_eq!(compact(root), "RangeValidation::<_>");
+        assert!(calls.is_empty());
+        assert!(matches!(completion, ChainCompletion::None));
     }
 
     #[test]
@@ -477,6 +540,29 @@ mod tests {
         assert_eq!(
             compact(&chain),
             "RangeValidation::<_>.min(0).raCompletionMarker"
+        );
+    }
+
+    #[test]
+    fn parses_root_trailing_dot_completion_probe() {
+        let chain: AttributeChain =
+            parse_str("RangeValidation::<_>.").expect("root trailing dot should recover");
+
+        assert!(chain.has_completion_probe());
+        assert_eq!(chain.calls().len(), 0);
+        assert_eq!(compact(&chain), "RangeValidation::<_>.raCompletionMarker");
+    }
+
+    #[test]
+    fn parses_root_trailing_dot_completion_probe_before_comma() {
+        let list: ChainList =
+            parse_str("RangeValidation::<_>., Other").expect("trailing dot before comma");
+
+        assert_eq!(list.entries().len(), 2);
+        assert!(list.entries()[0].chain().has_completion_probe());
+        assert_eq!(
+            compact(list.entries()[0].chain()),
+            "RangeValidation::<_>.raCompletionMarker"
         );
     }
 
@@ -501,6 +587,16 @@ mod tests {
             quote!(RangeValidation::<i32>.min(0).),
             &options,
         );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_root_trailing_dot_completion_probe_when_disabled() {
+        let options =
+            ChainParseOptions::new().allow_completion_probe(CompletionProbeParsing::Disabled);
+        let result =
+            AttributeChain::parse_tokens_with_options(quote!(RangeValidation::<i32>.), &options);
 
         assert!(result.is_err());
     }
@@ -532,6 +628,22 @@ mod tests {
             Some("completeHere".to_owned())
         );
         assert_eq!(compact(&chain), "RangeValidation::<_>.min(0).completeHere");
+    }
+
+    #[test]
+    fn parses_empty_chain_list() {
+        let list: ChainList = parse_str("").expect("empty list");
+
+        assert!(list.is_empty());
+        assert!(list.entries().is_empty());
+    }
+
+    #[test]
+    fn parses_unlabeled_chain_entry_starting_with_colon() {
+        let entry: ChainEntry = parse_str("::Validator").expect("unlabeled absolute path");
+
+        assert!(entry.label().is_none());
+        assert_eq!(compact(entry.chain()), "::Validator");
     }
 
     #[test]
