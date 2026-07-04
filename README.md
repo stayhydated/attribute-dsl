@@ -26,11 +26,11 @@ NamedChainGroup := Ident "(" ChainList ")"
 Examples of accepted chain shapes:
 
 ```text
-RangeValidation::<_>
-validators::RangeValidation::<_>.min(0).max(100)
-Validator.map::<String>(value)
-RangeValidation::<_>.
-RangeValidation::<_>.min(0).raCompletionMarker
+RootType::<_>
+RootType::<_>.first(1)
+RootType::<i32>.first(1)
+RootType::<_>.
+RootType::<_>.first(1).raCompletionMarker
 ```
 
 The root is kept as a `syn::Path`. Each dot-call is represented as a
@@ -38,8 +38,9 @@ The root is kept as a `syn::Path`. Each dot-call is represented as a
 arguments as `syn::Expr` values. Parser errors are reported as `syn::Error`.
 
 Associated constructors and other expression forms belong in the generated code
-around the parsed root. For example, parse `StringFaker` as the root, then emit
-`StringFaker::builder()` from your macro expansion.
+around the parsed root. For example, parse `RootType::<_>` as the root, then
+emit `RootType::<i32>::builder_for(stringify!(value))` from your macro
+expansion.
 
 ## Quick Parsing
 
@@ -48,27 +49,27 @@ use attribute_dsl::{AttributeChain, ChainCompletion, ChainList, NamedChainGroup}
 use syn::parse_str;
 
 let chain: AttributeChain =
-    parse_str("validators::RangeValidation::<_>.min(0).max(100)")?;
+    parse_str("RootType::<_>.first(1)")?;
 
 assert_eq!(
     chain.root_path().segments.last().unwrap().ident.to_string(),
-    "RangeValidation"
+    "RootType"
 );
-assert_eq!(chain.calls().len(), 2);
-assert_eq!(chain.calls()[0].method().to_string(), "min");
-assert_eq!(chain.calls()[1].method().to_string(), "max");
+assert_eq!(chain.calls().len(), 1);
+assert_eq!(chain.calls()[0].method().to_string(), "first");
+assert_eq!(chain.calls()[0].args().len(), 1);
 assert!(matches!(chain.completion(), ChainCompletion::None));
 
 let list: ChainList = parse_str(
-    "first = Validator::<_>.min(1), Validator::<String>, built = Faker.weight(2)",
+    "value = RootType::<_>.first(1), RootType::<i32>.first(2)",
 )?;
-assert_eq!(list.entries().len(), 3);
-assert_eq!(list.entries()[0].label().unwrap().to_string(), "first");
+assert_eq!(list.entries().len(), 2);
+assert_eq!(list.entries()[0].label().unwrap().to_string(), "value");
 assert!(list.entries()[1].label().is_none());
 
 let group: NamedChainGroup =
-    parse_str("each(tag = TagFaker.length(8), OtherFaker)")?;
-assert_eq!(group.name().to_string(), "each");
+    parse_str("fields(value = RootType::<_>.first(1), RootType::<i32>)")?;
+assert_eq!(group.name().to_string(), "fields");
 assert_eq!(group.entries().len(), 2);
 
 # Ok::<(), syn::Error>(())
@@ -199,7 +200,7 @@ use quote::quote;
 
 let options = ChainParseOptions::new().completion_marker("completeHere");
 let chain = AttributeChain::parse_tokens_with_options(
-    quote!(RangeValidation::<_>.min(0).),
+    quote!(RootType::<_>.first(1).),
     &options,
 )?;
 
@@ -213,7 +214,7 @@ let strict = ChainParseOptions::new()
     .allow_completion_probe(CompletionProbeParsing::Disabled);
 assert!(
     AttributeChain::parse_tokens_with_options(
-        quote!(RangeValidation::<_>.min(0).),
+        quote!(RootType::<_>.first(1).),
         &strict,
     )
     .is_err()
@@ -252,24 +253,24 @@ use attribute_dsl::{
 use quote::ToTokens as _;
 use syn::{Expr, Path, Type, parse_quote};
 
-let path: Path = parse_quote!(crate::RangeValidation::<_>);
-let (base_path, type_arg) = split_terminal_single_type_arg(path, "validator")?;
+let path: Path = parse_quote!(RootType::<_>);
+let (base_path, type_arg) = split_terminal_single_type_arg(path, "root")?;
 
 assert_eq!(
     base_path.segments.last().unwrap().ident.to_string(),
-    "RangeValidation"
+    "RootType"
 );
 assert!(type_arg.is_infer());
 
-let replacement: Type = parse_quote!(String);
+let replacement: Type = parse_quote!(i32);
 
-let path: Path = parse_quote!(crate::Input<Option<_>>);
+let path: Path = parse_quote!(RootType::<Option<_>>);
 let substituted_path = substitute_infer_in_path(&path, &replacement);
 assert!(
     substituted_path
         .to_token_stream()
         .to_string()
-        .contains("String")
+        .contains("i32")
 );
 
 let ty: Type = parse_quote!(fn([_; 2], &[_]) -> Option<_>);
@@ -278,16 +279,16 @@ assert!(
     substituted_type
         .to_token_stream()
         .to_string()
-        .contains("String")
+        .contains("i32")
 );
 
-let expr: Expr = parse_quote!(crate::Select::<_>.searchable(true));
+let expr: Expr = parse_quote!(RootType::<_>.first(1));
 let substituted_expr = substitute_infer_in_expr(&expr, &replacement);
 assert!(
     substituted_expr
         .to_token_stream()
         .to_string()
-        .contains("String")
+        .contains("i32")
 );
 
 # Ok::<(), syn::Error>(())
