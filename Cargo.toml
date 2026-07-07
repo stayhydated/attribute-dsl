@@ -14,6 +14,9 @@ proc-macro2 = "1.0"
 quote = "1.0"
 syn = { features = [ "extra-traits", "full", "parsing", "printing", "visit-mut" ], version = "2.0" }
 
+[lints]
+workspace = true
+
 [workspace.lints.rust]
 unexpected_cfgs = { check-cfg = [ "cfg(coverage)" ], level = "deny" }
 

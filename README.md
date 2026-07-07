@@ -52,7 +52,13 @@ let chain: AttributeChain =
     parse_str("RootType::<_>.first(1)")?;
 
 assert_eq!(
-    chain.root_path().segments.last().unwrap().ident.to_string(),
+    chain
+        .root_path()
+        .segments
+        .last()
+        .expect("parsed paths have at least one segment")
+        .ident
+        .to_string(),
     "RootType"
 );
 assert_eq!(chain.calls().len(), 1);
@@ -64,7 +70,13 @@ let list: ChainList = parse_str(
     "value = RootType::<_>.first(1), RootType::<i32>.first(2)",
 )?;
 assert_eq!(list.entries().len(), 2);
-assert_eq!(list.entries()[0].label().unwrap().to_string(), "value");
+assert_eq!(
+    list.entries()[0]
+        .label()
+        .expect("first entry is labeled")
+        .to_string(),
+    "value"
+);
 assert!(list.entries()[1].label().is_none());
 
 let group: NamedChainGroup =
@@ -206,7 +218,10 @@ let chain = AttributeChain::parse_tokens_with_options(
 
 assert!(chain.has_completion_probe());
 assert_eq!(
-    chain.completion_marker().unwrap().to_string(),
+    chain
+        .completion_marker()
+        .expect("chain has a completion probe")
+        .to_string(),
     "completeHere"
 );
 
@@ -257,7 +272,12 @@ let path: Path = parse_quote!(RootType::<_>);
 let (base_path, type_arg) = split_terminal_single_type_arg(path, "root")?;
 
 assert_eq!(
-    base_path.segments.last().unwrap().ident.to_string(),
+    base_path
+        .segments
+        .last()
+        .expect("parsed paths have at least one segment")
+        .ident
+        .to_string(),
     "RootType"
 );
 assert!(type_arg.is_infer());

@@ -8,12 +8,16 @@ use syn::{
 /// Single terminal type argument split from a path.
 #[derive(Clone, Debug)]
 pub enum SingleTypeArg {
+    /// The path's final segment had no generic arguments.
     None,
+    /// The path's final segment used `_` as its only type argument.
     Infer,
+    /// The path's final segment used one explicit type argument.
     Explicit(Box<Type>),
 }
 
 impl SingleTypeArg {
+    /// Return the explicit type argument, if one was present.
     pub fn explicit_type(&self) -> Option<&Type> {
         match self {
             Self::Explicit(ty) => Some(ty),
@@ -21,6 +25,7 @@ impl SingleTypeArg {
         }
     }
 
+    /// Return whether the terminal type argument was `_`.
     pub fn is_infer(&self) -> bool {
         matches!(self, Self::Infer)
     }
@@ -30,6 +35,12 @@ impl SingleTypeArg {
 ///
 /// This is useful for DSLs where `Thing::<_>` means "infer the field type" and
 /// `Thing::<T>` pins an explicit target type.
+///
+/// # Errors
+///
+/// Returns [`syn::Error`] when the path has no final segment, the final segment
+/// has more than one generic argument, the argument is not a type, or the final
+/// segment uses parenthesized generic arguments.
 pub fn split_terminal_single_type_arg(
     mut path: Path,
     subject: &str,

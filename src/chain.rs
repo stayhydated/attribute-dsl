@@ -45,11 +45,15 @@ impl CompletionProbeParsing {
 }
 
 impl ChainParseOptions {
+    /// Create parser options with completion probes enabled.
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Set the field/method marker inserted when the input ends in a dot.
+    ///
+    /// The marker must be a valid Rust identifier. Invalid markers cause
+    /// trailing-dot recovery to return a parse error.
     pub fn completion_marker(mut self, marker: impl Into<String>) -> Self {
         self.completion_marker = marker.into();
         self
@@ -66,8 +70,13 @@ impl ChainParseOptions {
         self
     }
 
-    fn completion_marker_ident(&self) -> Ident {
-        Ident::new(&self.completion_marker, Span::call_site())
+    fn completion_marker_ident(&self) -> Result<Ident> {
+        syn::parse_str(&self.completion_marker).map_err(|_| {
+            Error::new(
+                Span::call_site(),
+                "completion marker must be a valid Rust identifier",
+            )
+        })
     }
 }
 
@@ -85,10 +94,23 @@ pub struct AttributeChain {
 }
 
 impl AttributeChain {
+    /// Parse an [`AttributeChain`] from a [`ParseStream`] with custom options.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`syn::Error`] when the token stream is not a supported path or
+    /// dot-call chain, completion probes are disabled for probe syntax, or the
+    /// configured completion marker cannot be emitted as a Rust identifier.
     pub fn parse_with_options(input: ParseStream<'_>, options: &ChainParseOptions) -> Result<Self> {
         parse_chain_with_options(input, options)
     }
 
+    /// Parse an [`AttributeChain`] from tokens with custom options.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`syn::Error`] for the same syntax and option failures as
+    /// [`Self::parse_with_options`].
     pub fn parse_tokens_with_options(
         tokens: TokenStream,
         options: &ChainParseOptions,
@@ -183,8 +205,13 @@ impl quote::ToTokens for ChainCall {
 /// Completion state for a parsed chain.
 #[derive(Clone, Debug)]
 pub enum ChainCompletion {
+    /// The chain ended without a completion probe.
     None,
-    DotProbe { marker: Ident },
+    /// The chain ended at a completion marker after a dot.
+    DotProbe {
+        /// Marker identifier emitted by completion-probe recovery.
+        marker: Ident,
+    },
 }
 
 /// A single chain entry, optionally labeled as `label = Chain`.
@@ -340,7 +367,7 @@ fn parse_trailing_dot_probe_expr(
         return Ok(None);
     }
 
-    probe_expr.extend(options.completion_marker_ident().to_token_stream());
+    probe_expr.extend(options.completion_marker_ident()?.to_token_stream());
     Ok(syn::parse2::<Expr>(probe_expr).ok())
 }
 
@@ -628,6 +655,20 @@ mod tests {
             Some("completeHere".to_owned())
         );
         assert_eq!(compact(&chain), "RangeValidation::<_>.min(0).completeHere");
+    }
+
+    #[test]
+    fn rejects_invalid_custom_completion_marker() {
+        let options = ChainParseOptions::new().completion_marker("not a marker");
+        let err =
+            AttributeChain::parse_tokens_with_options(quote!(RangeValidation::<_>.), &options)
+                .expect_err("invalid completion marker should error");
+
+        assert!(
+            err.to_string()
+                .contains("completion marker must be a valid Rust identifier"),
+            "{err}"
+        );
     }
 
     #[test]
