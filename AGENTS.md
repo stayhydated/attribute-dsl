@@ -58,4 +58,4 @@ Start with:
 - Use `just ci` for the local recipe chain when the required external tools from
   the recipes are available.
 - CI runs formatting checks, locked Rust tests, clippy, docs, package dry-run,
-  cargo-machete, coverage, and Codecov upload from `.github/workflows/ci.yml`.
+  cargo-machete, coverage, and Codecov publishing from `.github/workflows/ci.yml`.
