@@ -18,9 +18,18 @@ syn = { features = [ "extra-traits", "full", "parsing", "printing", "visit-mut" 
 workspace = true
 
 [workspace.lints.rust]
+future_incompatible = "deny"
+nonstandard_style = "deny"
 unexpected_cfgs = { check-cfg = [ "cfg(coverage)" ], level = "deny" }
+unsafe_op_in_unsafe_fn = "deny"
+unused_must_use = "deny"
+
+[workspace.lints.rustdoc]
+bare_urls = "deny"
+broken_intra_doc_links = "deny"
 
 [workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
 dbg_macro = "deny"
 derive_partial_eq_without_eq = "warn"
 err_expect = "warn"
@@ -33,3 +42,17 @@ type_complexity = "allow"
 uninlined_format_args = "allow"
 unused_trait_names = "warn"
 useless_conversion = "warn"
+
+[profile.dev]
+codegen-units = 16
+debug = "limited"
+opt-level = 1
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = 3
