@@ -1,2 +1,8 @@
 /target
+/book/book
+/web/dist
+/web/public/book
+/web/public/llms
+/web/public/llms-full.txt
+/web/public/llms.txt
 .rumdl_cache

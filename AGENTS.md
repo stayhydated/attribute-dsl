@@ -31,6 +31,25 @@ Start with:
   Audience: executable public example.
   Mirrors the derive-macro workflow shown in `README.md`.
 
+- `book/`
+  Audience: public user documentation.
+  Owns task-focused guidance for parsing chains, completion probes, infer
+  substitution, and proc-macro expansion.
+
+- `skills/use-attribute-dsl/`
+  Audience: public agent integration.
+  Owns the reusable workflow and patterns for applying `attribute-dsl` in a
+  consumer proc-macro crate.
+
+- `web/`
+  Audience: public project navigation.
+  Owns the demo-less single-page GitHub Pages portal, project identity, and
+  route manifest. Shared owns the portal styling and component theme.
+
+- `xtask/`
+  Audience: internal workflow.
+  Owns book, llms.txt, GitHub Pages assembly, and static preview commands.
+
 ## Synchronization Rules
 
 - When parser syntax, accepted/rejected chain forms, completion probes, or
@@ -42,6 +61,14 @@ Start with:
   and any affected README examples in the same change.
 - When the derive-macro workflow changes, keep `examples/derive_field_attrs.rs`
   and the README Derive Macro Example aligned.
+- When public parser or infer behavior changes, keep the matching `book/src/`
+  chapters and `skills/use-attribute-dsl/` guidance aligned with the owning
+  Rust modules and README examples.
+- When project identity, destinations, or Pages routing changes, keep
+  `web/src/lib.rs`, `web/Dioxus.toml`, the xtask build inputs, and Pages
+  workflows aligned.
+- Keep `stayhydated-dioxus`, `stayhydated-site`, and `stayhydated-xtask` pinned
+  to one full `stayhydated/shared` revision.
 - When local or CI validation changes, keep `justfile`, `.github/workflows/ci.yml`,
   and any named guidance here aligned.
 - The crate is version `0.1.0`; durable docs and examples should describe the
@@ -55,6 +82,10 @@ Start with:
 - Use `just fmt` for formatting Rust, TOML, and Markdown files when formatting is
   part of the change.
 - Use `just test-docs` when README or crate documentation examples change.
+- Use `mdbook build book` for book-only changes and validate repository skills
+  with the skill creator's `quick_validate.py` helper.
+- Use `just web-build` plus the stayhydated Pages consumer audit when web,
+  book-output, llms-output, sitemap, or preview behavior changes.
 - Use `just ci` for the local recipe chain when the required external tools from
   the recipes are available.
 - CI runs formatting checks, locked Rust tests, clippy, docs, package dry-run,

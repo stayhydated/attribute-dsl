@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use attribute-dsl"
+  short_description: "Build Rust proc-macro attribute chain parsers"
+  default_prompt: "Use $use-attribute-dsl to implement a path-rooted Rust proc-macro attribute parser and expansion."
