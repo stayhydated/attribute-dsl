@@ -28,5 +28,19 @@ test-docs:
     cargo clean --doc
     cargo doc --workspace --all-features --no-deps --locked --open
 
+book:
+    mdbook serve book
+
+web-build:
+    cargo xtask build book
+    cargo xtask build llms-txt
+    cargo xtask build web
+
+web: web-build
+    dx serve --package web
+
+web-preview: web-build
+    cargo xtask preview web
+
 ci: fmt check clippy test cov test-publish
     cargo machete
