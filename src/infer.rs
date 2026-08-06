@@ -62,7 +62,7 @@ pub fn split_terminal_single_type_arg(
                 ));
             }
 
-            let arg = angle_args.args.pop().expect("len checked").into_value();
+            let arg = angle_args.args.pop().expect("len checked");
             match arg {
                 GenericArgument::Type(Type::Infer(_)) => SingleTypeArg::Infer,
                 GenericArgument::Type(ty) => SingleTypeArg::Explicit(Box::new(ty)),
@@ -107,13 +107,13 @@ pub fn substitute_infer_in_type(ty: &Type, replacement: &Type) -> Type {
             ptr.elem = Box::new(substitute_infer_in_type(&ptr.elem, replacement));
             Type::Ptr(ptr)
         },
-        Type::BareFn(bare_fn) => {
-            let mut bare_fn = bare_fn.clone();
-            for input in &mut bare_fn.inputs {
+        Type::FnPtr(fn_ptr) => {
+            let mut fn_ptr = fn_ptr.clone();
+            for input in &mut fn_ptr.inputs {
                 input.ty = substitute_infer_in_type(&input.ty, replacement);
             }
-            substitute_infer_in_return_type(&mut bare_fn.output, replacement);
-            Type::BareFn(bare_fn)
+            substitute_infer_in_return_type(&mut fn_ptr.output, replacement);
+            Type::FnPtr(fn_ptr)
         },
         Type::TraitObject(trait_object) => {
             let mut trait_object = trait_object.clone();
@@ -208,11 +208,9 @@ fn substitute_infer_in_path_arguments(arguments: &mut PathArguments, replacement
             substitute_infer_in_angle_bracketed_arguments(args, replacement);
         },
         PathArguments::Parenthesized(args) => {
-            args.inputs = args
-                .inputs
-                .iter()
-                .map(|ty| substitute_infer_in_type(ty, replacement))
-                .collect();
+            for input in &mut args.inputs {
+                input.ty = substitute_infer_in_type(&input.ty, replacement);
+            }
             substitute_infer_in_return_type(&mut args.output, replacement);
         },
         PathArguments::None => {},
@@ -261,7 +259,11 @@ mod tests {
 
     fn parenthesized_path(output: Type) -> Path {
         let mut inputs = syn::punctuated::Punctuated::new();
-        inputs.push(parse_quote!(_));
+        inputs.push(syn::NamedArg {
+            attrs: Vec::new(),
+            name: None,
+            ty: parse_quote!(_),
+        });
 
         Path::from(syn::PathSegment {
             ident: parse_quote!(FnOnce),
@@ -375,6 +377,7 @@ mod tests {
         );
 
         let group = Type::Group(syn::TypeGroup {
+            attrs: Vec::new(),
             group_token: Default::default(),
             elem: Box::new(parse_quote!(Option<_>)),
         });
