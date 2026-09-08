@@ -176,7 +176,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: stayhydated/shared/.github/workflows/rust-release.yml@570b2d8adc3eafb3d2ce0b5ddb0da2800970a228
+    uses: stayhydated/shared/.github/workflows/rust-release.yml@fa60aff141f1cd3bca24971bb5ee248149998e70
     with:
       app_client_id: ${{ vars.SHARED_REVISION_APP_CLIENT_ID }}
     secrets:
