@@ -1,0 +1,4 @@
+[workspace]
+repo_url = "https://github.com/stayhydated/attribute-dsl"
+release_always = true
+publish_timeout = "30m"
