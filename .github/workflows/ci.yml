@@ -114,11 +114,14 @@ jobs:
           git fetch --no-tags --depth=1 origin "${BASE_REF}:refs/remotes/origin/${BASE_REF}"
           git switch -c release-plz-dry-run
           git branch --set-upstream-to="origin/${BASE_REF}"
+          sed 's/release_always = false/release_always = true/' \
+            release-plz.toml > "${RUNNER_TEMP}/release-plz.toml"
 
       - name: Validate release plan
         uses: release-plz/action@aec534bbd8631793b9b3b8f1ee6cd886c322e17f # v0.5.133
         with:
           command: release
+          config: ${{ runner.temp }}/release-plz.toml
           dry_run: true
           version: 0.3.162
         env:
