@@ -87,6 +87,9 @@ jobs:
 
   package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - uses: actions/checkout@v7
@@ -100,6 +103,15 @@ jobs:
 
       - name: Check crates.io package
         run: cargo publish --dry-run --locked
+
+      - name: Validate release plan
+        uses: release-plz/action@aec534bbd8631793b9b3b8f1ee6cd886c322e17f # v0.5.133
+        with:
+          command: release
+          dry_run: true
+          version: 0.3.162
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
   machete:
     runs-on: ubuntu-latest
@@ -146,3 +158,15 @@ jobs:
         shell: bash
         run: |
           rm -f codecov codecov.SHA256SUM codecov.SHA256SUM.sig
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [test, fmt, clippy, docs, package, machete, rust-coverage]
+    permissions:
+      contents: read
+      id-token: write
+    uses: stayhydated/shared/.github/workflows/rust-release.yml@570b2d8adc3eafb3d2ce0b5ddb0da2800970a228
+    with:
+      app_client_id: ${{ vars.SHARED_REVISION_APP_CLIENT_ID }}
+    secrets:
+      app_private_key: ${{ secrets.SHARED_REVISION_APP_PRIVATE_KEY }}
