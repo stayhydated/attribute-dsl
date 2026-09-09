@@ -32,9 +32,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify CI-tested revision
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          if [[ "${actual_sha}" != "${TESTED_SHA}" ]]; then
+            echo "::error::Checked-out branch HEAD does not match the revision that passed CI"
+            exit 1
+          fi
 
       - uses: dtolnay/rust-toolchain@stable
 
