@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg)](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/github/stayhydated/attribute-dsl/graph/badge.svg)](https://codecov.io/github/stayhydated/attribute-dsl)
+[![Book](https://img.shields.io/badge/docs-book-black)](https://stayhydated.github.io/attribute-dsl/book/)
 [![Docs](https://docs.rs/attribute-dsl/badge.svg)](https://docs.rs/attribute-dsl/)
 [![Crates.io](https://img.shields.io/crates/v/attribute-dsl.svg)](https://crates.io/crates/attribute-dsl)
 
