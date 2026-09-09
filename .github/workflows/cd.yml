@@ -1,9 +1,7 @@
 name: cd
 
 on:
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
+  push:
     branches: [master]
 
 permissions: {}
@@ -14,14 +12,10 @@ env:
 jobs:
   release:
     name: release
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'master' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: release
     permissions:
+      actions: read
       contents: write
       id-token: write
       pull-requests: read
@@ -32,19 +26,43 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Verify CI-tested revision
+      - name: Attach pushed revision to its branch
         env:
-          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          actual_sha="$(git rev-parse HEAD)"
-          if [[ "${actual_sha}" != "${TESTED_SHA}" ]]; then
-            echo "::error::Checked-out branch HEAD does not match the revision that passed CI"
+          git switch --force-create "${BRANCH_NAME}" "${GITHUB_SHA}"
+          git branch --set-upstream-to="origin/${BRANCH_NAME}" "${BRANCH_NAME}"
+
+      - name: Require successful CI for this revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ci_run_id=""
+          for attempt in {1..12}; do
+            ci_run_id="$(gh run list \
+              --workflow ci.yml \
+              --commit "${GITHUB_SHA}" \
+              --event push \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty')"
+            if [[ -n "${ci_run_id}" ]]; then
+              break
+            fi
+            echo "Waiting for CI run to be registered (${attempt}/12)"
+            sleep 5
+          done
+
+          if [[ -z "${ci_run_id}" ]]; then
+            echo "::error::No CI run found for ${GITHUB_SHA}"
             exit 1
           fi
+
+          gh run watch "${ci_run_id}" --exit-status --interval 10
 
       - uses: dtolnay/rust-toolchain@stable
 
