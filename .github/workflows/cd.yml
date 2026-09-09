@@ -39,7 +39,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Publish unpublished crate versions
-        uses: release-plz/action@aec534bbd8631793b9b3b8f1ee6cd886c322e17f # v0.5.133
+        uses: release-plz/action@v0.5.133
         with:
           command: release
           version: 0.3.162
