@@ -1,8 +1,8 @@
 # attribute-dsl
 
-[![Build Status](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg)](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml)
+[![CI](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg)](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/github/stayhydated/attribute-dsl/graph/badge.svg)](https://codecov.io/github/stayhydated/attribute-dsl)
-[![Docs](https://docs.rs/attribute-dsl/badge.svg)](https://docs.rs/attribute-dsl/)
+[![Book](https://img.shields.io/badge/book-online-blue)](https://stayhydated.github.io/attribute-dsl/book/)
 [![Crates.io](https://img.shields.io/crates/v/attribute-dsl.svg)](https://crates.io/crates/attribute-dsl)
 
 `attribute-dsl` provides `syn` parsers for Rust proc-macro attributes built from
@@ -13,13 +13,7 @@ placeholders for application-owned subject types.
 Use it in derive-macro and attribute-macro implementation crates. The consumer
 keeps ownership of domain validation, constructors, and generated Rust.
 
-## Quick start
-
-Add the crate alongside the `syn` dependency used by the macro:
-
-```console
-cargo add attribute-dsl
-```
+## Parse an attribute chain
 
 Parse an attribute chain through `syn`:
 
@@ -53,11 +47,3 @@ consumer can preserve syntax and spans while quoting its expansion.
 - Recover a trailing dot as a typed rust-analyzer completion probe.
 - Inspect or replace `_` type placeholders in paths, types, and expressions.
 - Return `syn::Error` values for spanned proc-macro diagnostics.
-
-## Documentation
-
-- Follow the [attribute-dsl guide](https://stayhydated.github.io/attribute-dsl/book/)
-  for parser selection, completion probes, infer substitution, and expansion
-  patterns.
-- Use the [API documentation](https://docs.rs/attribute-dsl/) for public items
-  and signatures.

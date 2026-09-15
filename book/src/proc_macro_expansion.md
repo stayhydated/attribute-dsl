@@ -10,12 +10,15 @@ For each attribute:
 
 1. Parse the arguments with `attr.parse_args::<AttributeChain>()?`.
 2. Substitute the field type into `chain.root_path()`.
-3. Quote each call's method, optional turbofish, and arguments.
-4. Quote `chain.completion_marker()` after the calls when it exists.
-5. Place the result after an application-owned constructor that returns the
-   desired receiver type.
+3. Quote the application-owned constructor using the substituted root.
+4. Append each call's method, optional turbofish, and arguments in order.
+5. Append `chain.completion_marker()` when it exists.
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate proc_macro2;
+# extern crate quote;
+# extern crate syn;
 use attribute_dsl::{AttributeChain, substitute_infer_in_path};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -44,11 +47,21 @@ fn expand_attribute(
         #root::builder_for(#field_name) #(#calls)* #completion
     })
 }
+
+# let attr: Attribute = syn::parse_quote!(#[example(Root::<_>.first(1))]);
+# let expanded = expand_attribute(&attr, &syn::parse_quote!(i32), "value")?;
+# let expected = quote!(Root::<i32>::builder_for("value").first(1));
+# assert_eq!(expanded.to_string(), expected.to_string());
+# Ok::<(), syn::Error>(())
 ```
 
 The consumer owns `builder_for`, its arguments, and the final generated item.
 Keeping construction outside the parser lets multiple macro crates share the
 chain grammar while producing different domain-specific code.
+
+This example substitutes `_` in the root and preserves call arguments as
+written. If the consumer also interprets `_` in call arguments as the field
+type, apply `substitute_infer_in_expr` to those arguments before quoting them.
 
 ## Preserve completion typing
 
@@ -71,5 +84,11 @@ Test at least:
 - rejected non-path roots; and
 - trailing-dot input when completion probes are enabled.
 
-The repository's `examples/derive_field_attrs.rs` shows the same workflow in a
-complete executable derive-style example.
+Run the repository's complete derive-style example from its root:
+
+```console
+cargo run -p attribute-dsl --example derive_field_attrs --locked
+```
+
+`examples/derive_field_attrs.rs` checks the emitted tokens, including the
+substituted field type and completion marker.

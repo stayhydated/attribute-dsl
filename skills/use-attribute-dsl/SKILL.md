@@ -1,15 +1,19 @@
 ---
 name: use-attribute-dsl
-description: Apply the attribute-dsl crate when implementing, reviewing, or updating Rust derive-macro or attribute-macro parsers whose arguments use a Rust path root followed by dot calls, optional labels or lists, named groups, rust-analyzer trailing-dot completion probes, or `_` subject-type placeholders. Covers parser selection, syn-preserving expansion, infer substitution, completion configuration, diagnostics, and focused tests.
+description: Integrate or review attribute-dsl in Rust proc macros that parse path-rooted dot-call chains, labeled entries, lists, or named groups. Covers subject-type substitution and rust-analyzer completion probes; use syn directly for arbitrary expression grammars.
 ---
 
 # Use attribute-dsl
 
+Apply this workflow to consumer parsing and expansion. For a review, report
+findings without editing the consumer.
+
 ## Establish the consumer contract
 
-1. Read the consumer's attribute parsing, expansion, and tests.
-2. Write down the complete accepted argument shape.
-3. Decide whether `_` represents a subject type and whether trailing-dot input
+1. Read the consumer's attribute parsing, expansion, tests, and dependency
+   versions. `attribute-dsl` 0.2 exposes `syn` 3 nodes and requires Rust 1.98.
+2. Identify the complete accepted argument shape.
+3. Determine whether `_` represents a subject type and whether trailing-dot input
    must produce rust-analyzer completion.
 4. Identify the application-owned constructor and the typed receiver it
    returns.
@@ -32,13 +36,15 @@ a path-rooted call chain.
 
 Enable completion probes only when the expansion places the marker after a real
 typed receiver. Otherwise parse `AttributeChain` with completion probes
-disabled.
+disabled. Custom options apply to direct chain parsing; the composite `Parse`
+implementations use the defaults.
 
 ## Check the contract
 
-Cover accepted outer shapes, rejected non-path roots, call order and turbofish,
-absent/inferred/explicit subject types, and trailing-dot behavior when enabled.
-Keep semantic validation in the consumer instead of widening the parser grammar.
+Check the consumer tests for the changed contract: accepted outer shapes,
+rejected roots, preserved call order and turbofish, subject-type handling, or
+completion behavior as applicable. Run the focused checks available in that
+repository. Keep semantic validation in the consumer.
 
 ## Load concrete patterns
 

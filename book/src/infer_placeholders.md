@@ -1,8 +1,8 @@
 # Substitute infer placeholders
 
 Use the infer helpers when `_` in an attribute stands for a subject type known
-by the macro, such as an annotated field's type. Each helper returns a new
-syntax tree and leaves the input node available to the caller.
+by the macro, such as an annotated field's type. The substitution helpers
+return a new syntax tree and leave the input node available to the caller.
 
 | Helper | Use it for |
 |---|---|
@@ -13,11 +13,13 @@ syntax tree and leaves the input node available to the caller.
 
 ## Inspect a terminal type argument
 
-`split_terminal_single_type_arg` consumes a path, removes one terminal type
-argument, and returns `SingleTypeArg::None`, `SingleTypeArg::Infer`, or
+`split_terminal_single_type_arg` consumes a path, removes its final segment's
+generic arguments, and returns `SingleTypeArg::None`, `SingleTypeArg::Infer`, or
 `SingleTypeArg::Explicit`:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate syn;
 use attribute_dsl::{SingleTypeArg, split_terminal_single_type_arg};
 use syn::{Path, parse_quote};
 
@@ -39,8 +41,10 @@ assert!(matches!(argument, SingleTypeArg::Infer));
 
 The subject string appears in diagnostics. Use the consumer's domain term,
 such as `"validator"` or `"component"`, so errors identify the invalid path.
-The helper returns a `syn::Error` for multiple arguments, non-type arguments,
-or parenthesized arguments on the final segment.
+Omitting generic arguments produces `SingleTypeArg::None`. When angle brackets
+are present, they must contain exactly one type argument. Empty brackets,
+multiple arguments, non-type arguments, and parenthesized arguments on the
+final segment produce a `syn::Error`.
 
 ## Substitute nested placeholders
 
@@ -62,27 +66,28 @@ rules wherever those nodes occur. A `syn::Type` variant outside the listed
 forms is cloned unchanged, so choose a consumer grammar whose placeholders are
 within the supported forms.
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate syn;
 use attribute_dsl::{
     substitute_infer_in_expr, substitute_infer_in_path,
     substitute_infer_in_type,
 };
-use quote::ToTokens as _;
 use syn::{Expr, Path, Type, parse_quote};
 
 let replacement: Type = parse_quote!(i32);
 
 let path: Path = parse_quote!(RootType::<Option<_>>);
 let path = substitute_infer_in_path(&path, &replacement);
-assert!(path.to_token_stream().to_string().contains("i32"));
+assert_eq!(path, parse_quote!(RootType::<Option<i32>>));
 
 let ty: Type = parse_quote!(fn([_; 2], &[_]) -> Option<_>);
 let ty = substitute_infer_in_type(&ty, &replacement);
-assert!(ty.to_token_stream().to_string().contains("i32"));
+assert_eq!(ty, parse_quote!(fn([i32; 2], &[i32]) -> Option<i32>));
 
 let expr: Expr = parse_quote!(RootType::<_>.first(Vec::<_>::new()));
 let expr = substitute_infer_in_expr(&expr, &replacement);
-assert!(expr.to_token_stream().to_string().contains("i32"));
+assert_eq!(expr, parse_quote!(RootType::<i32>.first(Vec::<i32>::new())));
 ```
 
 Keep the replacement as a `syn::Type` and quote the returned tree directly.

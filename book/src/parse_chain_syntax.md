@@ -18,22 +18,27 @@ comma-separated `syn::Expr` arguments.
 
 ```text
 AttributeChain  := Path ("." Ident Turbofish? "(" Expr,* ")")* CompletionProbe?
-CompletionProbe := "." CompletionMarker
+CompletionProbe := "." CompletionMarker?
 ChainEntry      := (Ident "=")? AttributeChain
 ChainList       := (ChainEntry ("," ChainEntry)* ","?)?
 NamedChainGroup := Ident "(" ChainList ")"
 ```
 
-`Path` includes module-qualified and absolute paths with normal Rust generic
-arguments. Parentheses around a complete chain are accepted and normalized to
-the same parsed model. A `ChainList` and the contents of a `NamedChainGroup` may
-be empty, and lists may end with a comma.
+`Path` uses expression-path syntax, including module-qualified and absolute
+paths and `::<T>` generic arguments. Parentheses around a complete chain are
+accepted and normalized to the same parsed model. A `ChainList` and the contents
+of a `NamedChainGroup` may be empty, and lists may end with a comma.
+
+The terminal marker defaults to `raCompletionMarker`. With completion enabled,
+a trailing dot inserts that marker; see [Emit completion probes](completion_probes.md).
 
 ## Inspect parsed values
 
 Use the accessors instead of reparsing tokens:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate syn;
 use attribute_dsl::{AttributeChain, ChainList, NamedChainGroup};
 
 let chain: AttributeChain = syn::parse_str("Root::<i32>.first(1)")?;

@@ -1,5 +1,10 @@
 # attribute-dsl integration patterns
 
+These patterns use `attribute-dsl` 0.2 with `syn` 3. Parsing examples assume a
+`syn::Attribute` named `attr` inside a function returning `syn::Result`. The
+substitution and expansion examples also use a parsed `chain` and a
+`syn::Field` named `field`.
+
 ## Choose the outer parser
 
 | Attribute arguments | Parser |
@@ -18,7 +23,8 @@ let list = attr.parse_args::<attribute_dsl::ChainList>()?;
 let group = attr.parse_args::<attribute_dsl::NamedChainGroup>()?;
 ```
 
-Use only the parser matching the consumer's complete outer grammar.
+The four lines are alternatives; choose the one matching the consumer's
+complete outer grammar.
 
 ## Substitute the subject type
 
@@ -35,6 +41,11 @@ Use `substitute_infer_in_type` for a standalone `syn::Type` and
 `substitute_infer_in_expr` for paths and types nested in a `syn::Expr`. Use
 `split_terminal_single_type_arg(path, "validator")?` when absent, inferred, and
 explicit final type arguments select different expansion behavior.
+
+Root substitution leaves call arguments and method turbofish as parsed. If `_`
+inside a call argument also denotes the subject type, apply
+`substitute_infer_in_expr` to that argument before quoting it. Handle method
+type arguments according to the consumer's grammar.
 
 ## Quote calls and completion
 
@@ -58,8 +69,8 @@ let expanded = quote::quote! {
 };
 ```
 
-The generated constructor must return the real receiver type before the marker
-access.
+`builder_for` is the consumer-owned constructor in this example. It must return
+the real receiver type before the marker access.
 
 ## Configure direct chain parsing
 
