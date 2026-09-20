@@ -1,63 +1,61 @@
 # attribute-dsl
 
-[![Build Status](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg)](https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/github/stayhydated/attribute-dsl/graph/badge.svg)](https://codecov.io/github/stayhydated/attribute-dsl)
-[![Docs](https://docs.rs/attribute-dsl/badge.svg)](https://docs.rs/attribute-dsl/)
-[![Crates.io](https://img.shields.io/crates/v/attribute-dsl.svg)](https://crates.io/crates/attribute-dsl)
+[![CI][ci-badge]][ci]
+[![Codecov][codecov-badge]][codecov]
+[![Book][book-badge]][book]
+[![crates.io: attribute-dsl][crate-badge]][crate]
 
 `attribute-dsl` provides `syn` parsers for Rust proc-macro attributes built from
 a path root, ordered dot calls, optional labels, comma-separated entries, and
-named groups. It also supports rust-analyzer completion probes and `_`
-placeholders for application-owned subject types.
+named groups. Authors of derive and attribute macros can preserve Rust syntax
+while supporting rust-analyzer completion probes and `_` placeholders for
+application-owned subject types.
 
-Use it in derive-macro and attribute-macro implementation crates. The consumer
-keeps ownership of domain validation, constructors, and generated Rust.
+## Overview
 
-## Quick start
+- Parse one chain, a labeled entry, a list, or a named group.
+- Retain `syn::Path`, `syn::Ident`, and `syn::Expr` nodes for syntax- and
+  span-preserving expansion.
+- Recover a trailing dot as a typed rust-analyzer completion probe.
+- Inspect or replace `_` type placeholders in paths, types, and expressions.
+- Return `syn::Error` values for spanned proc-macro diagnostics.
 
-Add the crate alongside the `syn` dependency used by the macro:
+Consumers keep ownership of domain validation, constructors, and generated
+Rust.
 
-```console
-cargo add attribute-dsl
-```
+## Example
 
 Parse an attribute chain through `syn`:
 
 ```rust
 use attribute_dsl::{AttributeChain, ChainCompletion};
 
-let chain: AttributeChain =
-    syn::parse_str("RootType::<_>.first(1).second::<String>(\"value\")")
-        .expect("valid attribute chain");
+fn main() -> syn::Result<()> {
+    let chain: AttributeChain =
+        syn::parse_str("RootType::<_>.first(1).second::<String>(\"value\")")?;
 
-assert_eq!(
-    chain
-        .root_path()
-        .segments
-        .last()
-        .expect("a parsed path has a segment")
-        .ident
-        .to_string(),
-    "RootType"
-);
-assert_eq!(chain.calls().len(), 2);
-assert!(matches!(chain.completion(), ChainCompletion::None));
+    assert_eq!(
+        chain
+            .root_path()
+            .segments
+            .last()
+            .expect("a parsed path has a segment")
+            .ident
+            .to_string(),
+        "RootType"
+    );
+    assert_eq!(chain.calls().len(), 2);
+    assert!(matches!(chain.completion(), ChainCompletion::None));
+
+    Ok(())
+}
 ```
 
-The result retains `syn::Path`, `syn::Ident`, and `syn::Expr` nodes so the
-consumer can preserve syntax and spans while quoting its expansion.
-
-## Capabilities
-
-- Parse one chain, a labeled entry, a list, or a named group.
-- Recover a trailing dot as a typed rust-analyzer completion probe.
-- Inspect or replace `_` type placeholders in paths, types, and expressions.
-- Return `syn::Error` values for spanned proc-macro diagnostics.
-
-## Documentation
-
-- Follow the [attribute-dsl guide](https://stayhydated.github.io/attribute-dsl/book/)
-  for parser selection, completion probes, infer substitution, and expansion
-  patterns.
-- Use the [API documentation](https://docs.rs/attribute-dsl/) for public items
-  and signatures.
+[ci-badge]: https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg?branch=master
+[ci]: https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml
+[codecov-badge]: https://codecov.io/github/stayhydated/attribute-dsl/graph/badge.svg
+[codecov]: https://codecov.io/github/stayhydated/attribute-dsl
+[book-badge]: https://img.shields.io/badge/Book-mdBook-blue
+[book]: https://stayhydated.github.io/attribute-dsl/book/
+[crate-badge]: https://img.shields.io/crates/v/attribute-dsl.svg?label=attribute-dsl
+[crate]: https://crates.io/crates/attribute-dsl

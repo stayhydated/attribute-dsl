@@ -1,12 +1,11 @@
 # Getting started
 
-This path parses one path-rooted dot-call chain and inspects its root and calls.
-A successful `cargo check` confirms the parser and `syn` types resolve in the
-macro implementation crate.
+Parse a path-rooted dot-call chain and inspect its root and calls in a macro
+implementation crate.
 
 ## Prerequisites
 
-- Rust 1.96 or newer.
+- Rust 1.98 or newer.
 - A derive-macro or attribute-macro implementation crate.
 - A clear grammar for the attribute accepted by that macro.
 
@@ -16,17 +15,24 @@ Add `attribute-dsl` alongside the syntax dependencies used by the macro:
 
 ```toml
 [dependencies]
-attribute-dsl = "0.1"
+attribute-dsl = "0.2"
+proc-macro2 = "1.0"
 quote = "1.0"
-syn = { features = [ "full" ], version = "2.0" }
+syn = { features = [ "full" ], version = "3.0" }
 ```
+
+Use the same major version of `syn` as `attribute-dsl`: the parser's public
+API accepts and returns `syn` nodes. `quote` and `proc-macro2` are used by the
+expansion examples later in this guide.
 
 ## Parse a chain
 
 `AttributeChain` implements `syn::parse::Parse`, so it works with attribute
 argument parsing and `syn::parse_str`:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate syn;
 use attribute_dsl::AttributeChain;
 
 let chain: AttributeChain =
