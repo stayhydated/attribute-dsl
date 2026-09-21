@@ -9,7 +9,10 @@ the marker after a real typed receiver.
 With the default options, `Root::<_>.first(1).` parses as a chain whose terminal
 marker is `raCompletionMarker`:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate quote;
+# extern crate syn;
 use attribute_dsl::AttributeChain;
 use quote::quote;
 
@@ -34,7 +37,10 @@ completion state.
 
 Use one stable Rust identifier when the consumer needs a custom marker:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate quote;
+# extern crate syn;
 use attribute_dsl::{AttributeChain, ChainParseOptions};
 use quote::quote;
 
@@ -64,7 +70,9 @@ the `Parse` implementations for entries, lists, and groups use the defaults.
 Disable completion probes when the macro accepts only complete chains or cannot
 emit a typed receiver:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate quote;
 use attribute_dsl::{AttributeChain, ChainParseOptions, CompletionProbeParsing};
 use quote::quote;
 
@@ -86,7 +94,9 @@ completion marker.
 Default completion recovery stops before a comma in `ChainList`, so later
 entries remain available while one entry is incomplete:
 
-```rust,ignore
+```rust
+# extern crate attribute_dsl;
+# extern crate syn;
 use attribute_dsl::ChainList;
 
 let list: ChainList = syn::parse_str(
