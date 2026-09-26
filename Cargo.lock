@@ -3058,6 +3058,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
 
 [[package]]
+name = "quick-xml"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quinn"
 version = "0.11.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3651,7 +3660,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "stayhydated-dioxus"
 version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=14df45a56f8fa847f816cf297c7b36dffb77ea1e#14df45a56f8fa847f816cf297c7b36dffb77ea1e"
+source = "git+https://github.com/stayhydated/shared?rev=fc2bbdb4755863c3d4112a2c015dd646016808a6#fc2bbdb4755863c3d4112a2c015dd646016808a6"
 dependencies = [
  "bon",
  "dioxus",
@@ -3665,7 +3674,7 @@ dependencies = [
 [[package]]
 name = "stayhydated-dioxus-core"
 version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=14df45a56f8fa847f816cf297c7b36dffb77ea1e#14df45a56f8fa847f816cf297c7b36dffb77ea1e"
+source = "git+https://github.com/stayhydated/shared?rev=fc2bbdb4755863c3d4112a2c015dd646016808a6#fc2bbdb4755863c3d4112a2c015dd646016808a6"
 dependencies = [
  "bytemuck",
  "derive_more",
@@ -3682,16 +3691,17 @@ dependencies = [
 [[package]]
 name = "stayhydated-site"
 version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=14df45a56f8fa847f816cf297c7b36dffb77ea1e#14df45a56f8fa847f816cf297c7b36dffb77ea1e"
+source = "git+https://github.com/stayhydated/shared?rev=fc2bbdb4755863c3d4112a2c015dd646016808a6#fc2bbdb4755863c3d4112a2c015dd646016808a6"
 dependencies = [
  "derive_more",
  "dioxus",
+ "quick-xml",
 ]
 
 [[package]]
 name = "stayhydated-xtask"
 version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=14df45a56f8fa847f816cf297c7b36dffb77ea1e#14df45a56f8fa847f816cf297c7b36dffb77ea1e"
+source = "git+https://github.com/stayhydated/shared?rev=fc2bbdb4755863c3d4112a2c015dd646016808a6#fc2bbdb4755863c3d4112a2c015dd646016808a6"
 dependencies = [
  "anyhow",
  "bon",
