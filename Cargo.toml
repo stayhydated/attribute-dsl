@@ -15,9 +15,9 @@ version = "0.2.1"
 anyhow = "1.0"
 clap = { features = [ "derive" ], version = "4.6" }
 dioxus = { default-features = false, version = "0.7" }
-stayhydated-dioxus = { git = "https://github.com/stayhydated/shared", rev = "14df45a56f8fa847f816cf297c7b36dffb77ea1e" }
-stayhydated-site = { git = "https://github.com/stayhydated/shared", rev = "14df45a56f8fa847f816cf297c7b36dffb77ea1e" }
-stayhydated-xtask = { git = "https://github.com/stayhydated/shared", rev = "14df45a56f8fa847f816cf297c7b36dffb77ea1e" }
+stayhydated-dioxus = { git = "https://github.com/stayhydated/shared", rev = "125e20e910e17d23a874399f6b88084830ac679d" }
+stayhydated-site = { git = "https://github.com/stayhydated/shared", rev = "125e20e910e17d23a874399f6b88084830ac679d" }
+stayhydated-xtask = { git = "https://github.com/stayhydated/shared", rev = "125e20e910e17d23a874399f6b88084830ac679d" }
 web = { path = "web" }
 
 [package]
