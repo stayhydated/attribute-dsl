@@ -8,7 +8,7 @@ return a new syntax tree and leave the input node available to the caller.
 |---|---|
 | `split_terminal_single_type_arg` | Distinguish an absent, inferred, or explicit final type argument. |
 | `substitute_infer_in_path` | Replace `_` inside path arguments. |
-| `substitute_infer_in_type` | Replace `_` in supported nested type forms. |
+| `substitute_infer_in_type` | Replace `_` in parsed nested type nodes. |
 | `substitute_infer_in_expr` | Replace `_` in paths and types nested in an expression. |
 
 ## Inspect a terminal type argument
@@ -48,23 +48,15 @@ final segment produce a `syn::Error`.
 
 ## Substitute nested placeholders
 
-The path helper traverses generic arguments on every segment, including nested
-types, associated type values and constraints, and parenthesized function
-arguments and results.
+All three helpers use `syn`'s syntax-tree traversal to replace `_` type nodes.
+This includes generic arguments, associated type values and constraints,
+function arguments and results, qualified-self types, and types nested in const
+expressions such as array lengths.
 
-The type helper supports:
-
-- `_` and paths with type arguments;
-- arrays, slices, raw pointers, and references;
-- bare function inputs and results;
-- trait-object and `impl Trait` bounds;
-- tuples; and
-- parenthesized and grouped types.
-
-The expression helper traverses the expression and applies the path and type
-rules wherever those nodes occur. A `syn::Type` variant outside the listed
-forms is cloned unchanged, so choose a consumer grammar whose placeholders are
-within the supported forms.
+Macro token bodies and other unparsed tokens remain unchanged. Expression
+placeholders are not type placeholders and are also left unchanged. Traversal
+stops at each replacement, so `_` inside the replacement type stays available
+for the consumer to resolve.
 
 ```rust
 # extern crate attribute_dsl;
@@ -84,6 +76,18 @@ assert_eq!(path, parse_quote!(RootType::<Option<i32>>));
 let ty: Type = parse_quote!(fn([_; 2], &[_]) -> Option<_>);
 let ty = substitute_infer_in_type(&ty, &replacement);
 assert_eq!(ty, parse_quote!(fn([i32; 2], &[i32]) -> Option<i32>));
+
+let qualified: Type = parse_quote!(<Vec<_> as Trait>::Item);
+assert_eq!(
+    substitute_infer_in_type(&qualified, &replacement),
+    parse_quote!(<Vec<i32> as Trait>::Item)
+);
+
+let array: Type = parse_quote!([u8; size_of::<_>()]);
+assert_eq!(
+    substitute_infer_in_type(&array, &replacement),
+    parse_quote!([u8; size_of::<i32>()])
+);
 
 let expr: Expr = parse_quote!(RootType::<_>.first(Vec::<_>::new()));
 let expr = substitute_infer_in_expr(&expr, &replacement);

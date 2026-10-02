@@ -85,6 +85,9 @@ impl ChainParseOptions {
 /// Accepted roots are:
 ///
 /// - a path, such as `RangeValidation::<_>`.
+///
+/// Qualified-self roots such as `<T as Trait>::Builder` are rejected because
+/// their type qualification cannot be represented by the stored [`Path`].
 #[derive(Clone, Debug)]
 pub struct AttributeChain {
     root: Path,
@@ -418,7 +421,15 @@ fn analyze_chain_expr(
             });
             Ok(Some((root, calls, ChainCompletion::None)))
         },
-        Expr::Path(path) => Ok(Some((path.path.clone(), Vec::new(), ChainCompletion::None))),
+        Expr::Path(path) => {
+            if let Some(qself) = &path.qself {
+                return Err(Error::new(
+                    qself.lt_token.span,
+                    "expected an attribute path, not a qualified self type",
+                ));
+            }
+            Ok(Some((path.path.clone(), Vec::new(), ChainCompletion::None)))
+        },
         _ => Ok(None),
     }
 }
@@ -509,6 +520,29 @@ mod tests {
         let result = parse_str::<AttributeChain>("StringFaker::builder().with_min_length(5)");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_qualified_self_roots() {
+        for input in [
+            "<T>::Builder",
+            "<T as Trait>::Builder",
+            "<T as Trait>::Builder.min(0)",
+            "<T as Trait>::Builder.",
+        ] {
+            let error = parse_str::<AttributeChain>(input).expect_err("qualified root");
+            assert!(
+                error.to_string().contains("qualified self"),
+                "{input}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn preserves_qualified_self_in_call_arguments() {
+        let chain: AttributeChain =
+            parse_str("Validator.value(<T as Trait>::VALUE)").expect("qualified argument");
+        assert_eq!(compact(chain), "Validator.value(<TasTrait>::VALUE)");
     }
 
     #[test]

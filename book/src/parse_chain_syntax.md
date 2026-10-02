@@ -78,6 +78,7 @@ the consumer macro.
 | Unsupported input | Action |
 |---|---|
 | `Root::builder().first(1)` | Parse `Root.first(1)`, then emit `Root::builder()` before the calls. |
+| `<T as Trait>::Root` | Use an unqualified or module-qualified root; a `syn::Path` cannot preserve a qualified-self type. |
 | `Root.field` | Use a method call, or reserve the configured terminal marker for completion probes. |
 | `left + right` | Parse the expression with `syn` directly instead of `AttributeChain`. |
 
