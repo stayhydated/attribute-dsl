@@ -449,6 +449,7 @@ fn invalid_chain_syntax_error(input: ParseStream<'_>) -> Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::assert_matches;
     use syn::{parse_quote, parse_str};
 
     fn compact(tokens: impl quote::ToTokens) -> String {
@@ -482,7 +483,7 @@ mod tests {
             parse_str("::validators::RangeValidation").expect("root-only chain should parse");
 
         assert_eq!(compact(chain.root_path()), "::validators::RangeValidation");
-        assert!(matches!(chain.completion(), ChainCompletion::None));
+        assert_matches!(chain.completion(), ChainCompletion::None);
         assert!(chain.completion_marker().is_none());
         assert!(!chain.has_completion_probe());
         let _span = chain.span();
@@ -550,7 +551,7 @@ mod tests {
                 .expect("grouped path should be a chain");
         assert_eq!(compact(root), "RangeValidation::<_>");
         assert!(calls.is_empty());
-        assert!(matches!(completion, ChainCompletion::None));
+        assert_matches!(completion, ChainCompletion::None);
     }
 
     #[test]
