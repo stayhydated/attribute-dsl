@@ -403,4 +403,16 @@ mod tests {
             "valueas*constString"
         );
     }
+
+    #[test]
+    fn substitution_preserves_input_and_infer_inside_replacement() {
+        let input: Type = parse_quote!(Result<Vec<_>, [_; 2]>);
+        let replacement: Type = parse_quote!(Option<_>);
+
+        let output = substitute_infer_in_type(&input, &replacement);
+
+        assert_eq!(compact(output), "Result<Vec<Option<_>>,[Option<_>;2]>");
+        assert_eq!(compact(input), "Result<Vec<_>,[_;2]>");
+        assert_eq!(compact(replacement), "Option<_>");
+    }
 }
