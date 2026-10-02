@@ -7,7 +7,7 @@ quote the parsed pieces into generated Rust.
 
 This guide is for authors of derive and attribute macros. It assumes familiarity
 with `syn`, `quote`, and Rust token streams. The crate uses `syn` 3 and requires
-Rust 1.98 or newer.
+Rust 1.99 or newer.
 
 Use the crate when an attribute accepts syntax such as:
 

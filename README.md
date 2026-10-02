@@ -11,6 +11,8 @@ named groups. Authors of derive and attribute macros can preserve Rust syntax
 while supporting rust-analyzer completion probes and `_` placeholders for
 application-owned subject types.
 
+Requires Rust 1.99 or newer (edition 2024).
+
 ## Overview
 
 - Parse one chain, a labeled entry, a list, or a named group.
@@ -28,6 +30,8 @@ Rust.
 Parse an attribute chain through `syn`:
 
 ```rust
+use std::assert_matches;
+
 use attribute_dsl::{AttributeChain, ChainCompletion};
 
 fn main() -> syn::Result<()> {
@@ -45,7 +49,7 @@ fn main() -> syn::Result<()> {
         "RootType"
     );
     assert_eq!(chain.calls().len(), 2);
-    assert!(matches!(chain.completion(), ChainCompletion::None));
+    assert_matches!(chain.completion(), ChainCompletion::None);
 
     Ok(())
 }

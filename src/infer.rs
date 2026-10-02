@@ -85,71 +85,43 @@ pub fn split_terminal_single_type_arg(
 
 /// Substitute `replacement` for every `_` occurrence inside a type.
 pub fn substitute_infer_in_type(ty: &Type, replacement: &Type) -> Type {
+    let mut ty = ty.clone();
+    substitute_infer_in_type_mut(&mut ty, replacement);
+    ty
+}
+
+fn substitute_infer_in_type_mut(ty: &mut Type, replacement: &Type) {
     match ty {
-        Type::Infer(_) => replacement.clone(),
+        Type::Infer(_) => *ty = replacement.clone(),
         Type::Path(type_path) => {
-            let mut type_path = type_path.clone();
-            type_path.path = substitute_infer_in_path(&type_path.path, replacement);
-            Type::Path(type_path)
+            substitute_infer_in_path_mut(&mut type_path.path, replacement);
         },
-        Type::Array(array) => {
-            let mut array = array.clone();
-            array.elem = Box::new(substitute_infer_in_type(&array.elem, replacement));
-            Type::Array(array)
-        },
-        Type::Slice(slice) => {
-            let mut slice = slice.clone();
-            slice.elem = Box::new(substitute_infer_in_type(&slice.elem, replacement));
-            Type::Slice(slice)
-        },
-        Type::Ptr(ptr) => {
-            let mut ptr = ptr.clone();
-            ptr.elem = Box::new(substitute_infer_in_type(&ptr.elem, replacement));
-            Type::Ptr(ptr)
-        },
+        Type::Array(array) => substitute_infer_in_type_mut(&mut array.elem, replacement),
+        Type::Slice(slice) => substitute_infer_in_type_mut(&mut slice.elem, replacement),
+        Type::Ptr(ptr) => substitute_infer_in_type_mut(&mut ptr.elem, replacement),
         Type::FnPtr(fn_ptr) => {
-            let mut fn_ptr = fn_ptr.clone();
             for input in &mut fn_ptr.inputs {
-                input.ty = substitute_infer_in_type(&input.ty, replacement);
+                substitute_infer_in_type_mut(&mut input.ty, replacement);
             }
             substitute_infer_in_return_type(&mut fn_ptr.output, replacement);
-            Type::FnPtr(fn_ptr)
         },
         Type::TraitObject(trait_object) => {
-            let mut trait_object = trait_object.clone();
             substitute_infer_in_bounds(&mut trait_object.bounds, replacement);
-            Type::TraitObject(trait_object)
         },
         Type::ImplTrait(impl_trait) => {
-            let mut impl_trait = impl_trait.clone();
             substitute_infer_in_bounds(&mut impl_trait.bounds, replacement);
-            Type::ImplTrait(impl_trait)
         },
         Type::Tuple(tuple) => {
-            let mut tuple = tuple.clone();
-            tuple.elems = tuple
-                .elems
-                .iter()
-                .map(|ty| substitute_infer_in_type(ty, replacement))
-                .collect();
-            Type::Tuple(tuple)
+            for elem in &mut tuple.elems {
+                substitute_infer_in_type_mut(elem, replacement);
+            }
         },
-        Type::Paren(paren) => {
-            let mut paren = paren.clone();
-            paren.elem = Box::new(substitute_infer_in_type(&paren.elem, replacement));
-            Type::Paren(paren)
-        },
-        Type::Group(group) => {
-            let mut group = group.clone();
-            group.elem = Box::new(substitute_infer_in_type(&group.elem, replacement));
-            Type::Group(group)
-        },
+        Type::Paren(paren) => substitute_infer_in_type_mut(&mut paren.elem, replacement),
+        Type::Group(group) => substitute_infer_in_type_mut(&mut group.elem, replacement),
         Type::Reference(reference) => {
-            let mut reference = reference.clone();
-            *reference.elem = substitute_infer_in_type(&reference.elem, replacement);
-            Type::Reference(reference)
+            substitute_infer_in_type_mut(&mut reference.elem, replacement);
         },
-        _ => ty.clone(),
+        _ => {},
     }
 }
 
@@ -163,12 +135,14 @@ pub fn substitute_infer_in_expr(expr: &Expr, replacement: &Type) -> Expr {
 /// Substitute `replacement` for every `_` occurrence inside path arguments.
 pub fn substitute_infer_in_path(path: &Path, replacement: &Type) -> Path {
     let mut path = path.clone();
+    substitute_infer_in_path_mut(&mut path, replacement);
+    path
+}
 
+fn substitute_infer_in_path_mut(path: &mut Path, replacement: &Type) {
     for segment in &mut path.segments {
         substitute_infer_in_path_arguments(&mut segment.arguments, replacement);
     }
-
-    path
 }
 
 struct InferSubstitutor<'a> {
@@ -177,17 +151,17 @@ struct InferSubstitutor<'a> {
 
 impl visit_mut::VisitMut for InferSubstitutor<'_> {
     fn visit_type_mut(&mut self, node: &mut Type) {
-        *node = substitute_infer_in_type(node, self.replacement);
+        substitute_infer_in_type_mut(node, self.replacement);
     }
 
     fn visit_path_mut(&mut self, node: &mut Path) {
-        *node = substitute_infer_in_path(node, self.replacement);
+        substitute_infer_in_path_mut(node, self.replacement);
     }
 }
 
 fn substitute_infer_in_return_type(return_type: &mut syn::ReturnType, replacement: &Type) {
     if let syn::ReturnType::Type(_, ty) = return_type {
-        **ty = substitute_infer_in_type(ty, replacement);
+        substitute_infer_in_type_mut(ty, replacement);
     }
 }
 
@@ -197,7 +171,7 @@ fn substitute_infer_in_bounds(
 ) {
     for bound in bounds {
         if let syn::TypeParamBound::Trait(trait_bound) = bound {
-            trait_bound.path = substitute_infer_in_path(&trait_bound.path, replacement);
+            substitute_infer_in_path_mut(&mut trait_bound.path, replacement);
         }
     }
 }
@@ -209,7 +183,7 @@ fn substitute_infer_in_path_arguments(arguments: &mut PathArguments, replacement
         },
         PathArguments::Parenthesized(args) => {
             for input in &mut args.inputs {
-                input.ty = substitute_infer_in_type(&input.ty, replacement);
+                substitute_infer_in_type_mut(&mut input.ty, replacement);
             }
             substitute_infer_in_return_type(&mut args.output, replacement);
         },
@@ -224,13 +198,13 @@ fn substitute_infer_in_angle_bracketed_arguments(
     for arg in &mut args.args {
         match arg {
             GenericArgument::Type(ty) => {
-                *ty = substitute_infer_in_type(ty, replacement);
+                substitute_infer_in_type_mut(ty, replacement);
             },
             GenericArgument::AssocType(assoc_type) => {
                 if let Some(generics) = &mut assoc_type.generics {
                     substitute_infer_in_angle_bracketed_arguments(generics, replacement);
                 }
-                assoc_type.ty = substitute_infer_in_type(&assoc_type.ty, replacement);
+                substitute_infer_in_type_mut(&mut assoc_type.ty, replacement);
             },
             GenericArgument::Constraint(constraint) => {
                 if let Some(generics) = &mut constraint.generics {
@@ -428,5 +402,17 @@ mod tests {
             compact(substitute_infer_in_expr(&expr, &replacement)),
             "valueas*constString"
         );
+    }
+
+    #[test]
+    fn substitution_preserves_input_and_infer_inside_replacement() {
+        let input: Type = parse_quote!(Result<Vec<_>, [_; 2]>);
+        let replacement: Type = parse_quote!(Option<_>);
+
+        let output = substitute_infer_in_type(&input, &replacement);
+
+        assert_eq!(compact(output), "Result<Vec<Option<_>>,[Option<_>;2]>");
+        assert_eq!(compact(input), "Result<Vec<_>,[_;2]>");
+        assert_eq!(compact(replacement), "Option<_>");
     }
 }
