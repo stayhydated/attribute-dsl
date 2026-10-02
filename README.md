@@ -25,6 +25,11 @@ Requires Rust 1.99 or newer (edition 2024).
 Consumers keep ownership of domain validation, constructors, and generated
 Rust.
 
+Chain roots must fit in a `syn::Path`; qualified-self roots such as
+`<T as Trait>::Builder` return a parse error. Type substitution traverses parsed
+type nodes, including qualified-self types and types in const expressions,
+while leaving macro token bodies and placeholders in the replacement unchanged.
+
 ## Example
 
 Parse an attribute chain through `syn`:
@@ -44,8 +49,7 @@ fn main() -> syn::Result<()> {
             .segments
             .last()
             .expect("a parsed path has a segment")
-            .ident
-            .to_string(),
+            .ident,
         "RootType"
     );
     assert_eq!(chain.calls().len(), 2);

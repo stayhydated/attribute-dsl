@@ -1,9 +1,6 @@
 use syn::spanned::Spanned as _;
 use syn::visit_mut::{self, VisitMut as _};
-use syn::{
-    AngleBracketedGenericArguments, Error, Expr, GenericArgument, Path, PathArguments, Result,
-    Token, Type,
-};
+use syn::{Error, Expr, GenericArgument, Path, PathArguments, Result, Type};
 
 /// Single terminal type argument split from a path.
 #[derive(Clone, Debug)]
@@ -83,66 +80,33 @@ pub fn split_terminal_single_type_arg(
     Ok((path, type_arg))
 }
 
-/// Substitute `replacement` for every `_` occurrence inside a type.
+/// Substitute `replacement` for every `_` type placeholder inside a type.
+///
+/// Traverses parsed type nodes, including qualified-self types and types inside
+/// const expressions. Macro token bodies are opaque and remain unchanged.
+/// Placeholders inside the replacement itself are not substituted.
 pub fn substitute_infer_in_type(ty: &Type, replacement: &Type) -> Type {
     let mut ty = ty.clone();
-    substitute_infer_in_type_mut(&mut ty, replacement);
+    InferSubstitutor { replacement }.visit_type_mut(&mut ty);
     ty
 }
 
-fn substitute_infer_in_type_mut(ty: &mut Type, replacement: &Type) {
-    match ty {
-        Type::Infer(_) => *ty = replacement.clone(),
-        Type::Path(type_path) => {
-            substitute_infer_in_path_mut(&mut type_path.path, replacement);
-        },
-        Type::Array(array) => substitute_infer_in_type_mut(&mut array.elem, replacement),
-        Type::Slice(slice) => substitute_infer_in_type_mut(&mut slice.elem, replacement),
-        Type::Ptr(ptr) => substitute_infer_in_type_mut(&mut ptr.elem, replacement),
-        Type::FnPtr(fn_ptr) => {
-            for input in &mut fn_ptr.inputs {
-                substitute_infer_in_type_mut(&mut input.ty, replacement);
-            }
-            substitute_infer_in_return_type(&mut fn_ptr.output, replacement);
-        },
-        Type::TraitObject(trait_object) => {
-            substitute_infer_in_bounds(&mut trait_object.bounds, replacement);
-        },
-        Type::ImplTrait(impl_trait) => {
-            substitute_infer_in_bounds(&mut impl_trait.bounds, replacement);
-        },
-        Type::Tuple(tuple) => {
-            for elem in &mut tuple.elems {
-                substitute_infer_in_type_mut(elem, replacement);
-            }
-        },
-        Type::Paren(paren) => substitute_infer_in_type_mut(&mut paren.elem, replacement),
-        Type::Group(group) => substitute_infer_in_type_mut(&mut group.elem, replacement),
-        Type::Reference(reference) => {
-            substitute_infer_in_type_mut(&mut reference.elem, replacement);
-        },
-        _ => {},
-    }
-}
-
-/// Substitute `replacement` for every `_` occurrence inside an expression.
+/// Substitute `replacement` for every `_` type placeholder inside an expression.
+///
+/// Uses the same traversal rules as [`substitute_infer_in_type`].
 pub fn substitute_infer_in_expr(expr: &Expr, replacement: &Type) -> Expr {
     let mut expr = expr.clone();
     InferSubstitutor { replacement }.visit_expr_mut(&mut expr);
     expr
 }
 
-/// Substitute `replacement` for every `_` occurrence inside path arguments.
+/// Substitute `replacement` for every `_` type placeholder inside path arguments.
+///
+/// Uses the same traversal rules as [`substitute_infer_in_type`].
 pub fn substitute_infer_in_path(path: &Path, replacement: &Type) -> Path {
     let mut path = path.clone();
-    substitute_infer_in_path_mut(&mut path, replacement);
+    InferSubstitutor { replacement }.visit_path_mut(&mut path);
     path
-}
-
-fn substitute_infer_in_path_mut(path: &mut Path, replacement: &Type) {
-    for segment in &mut path.segments {
-        substitute_infer_in_path_arguments(&mut segment.arguments, replacement);
-    }
 }
 
 struct InferSubstitutor<'a> {
@@ -151,68 +115,10 @@ struct InferSubstitutor<'a> {
 
 impl visit_mut::VisitMut for InferSubstitutor<'_> {
     fn visit_type_mut(&mut self, node: &mut Type) {
-        substitute_infer_in_type_mut(node, self.replacement);
-    }
-
-    fn visit_path_mut(&mut self, node: &mut Path) {
-        substitute_infer_in_path_mut(node, self.replacement);
-    }
-}
-
-fn substitute_infer_in_return_type(return_type: &mut syn::ReturnType, replacement: &Type) {
-    if let syn::ReturnType::Type(_, ty) = return_type {
-        substitute_infer_in_type_mut(ty, replacement);
-    }
-}
-
-fn substitute_infer_in_bounds(
-    bounds: &mut syn::punctuated::Punctuated<syn::TypeParamBound, Token![+]>,
-    replacement: &Type,
-) {
-    for bound in bounds {
-        if let syn::TypeParamBound::Trait(trait_bound) = bound {
-            substitute_infer_in_path_mut(&mut trait_bound.path, replacement);
-        }
-    }
-}
-
-fn substitute_infer_in_path_arguments(arguments: &mut PathArguments, replacement: &Type) {
-    match arguments {
-        PathArguments::AngleBracketed(args) => {
-            substitute_infer_in_angle_bracketed_arguments(args, replacement);
-        },
-        PathArguments::Parenthesized(args) => {
-            for input in &mut args.inputs {
-                substitute_infer_in_type_mut(&mut input.ty, replacement);
-            }
-            substitute_infer_in_return_type(&mut args.output, replacement);
-        },
-        PathArguments::None => {},
-    }
-}
-
-fn substitute_infer_in_angle_bracketed_arguments(
-    args: &mut AngleBracketedGenericArguments,
-    replacement: &Type,
-) {
-    for arg in &mut args.args {
-        match arg {
-            GenericArgument::Type(ty) => {
-                substitute_infer_in_type_mut(ty, replacement);
-            },
-            GenericArgument::AssocType(assoc_type) => {
-                if let Some(generics) = &mut assoc_type.generics {
-                    substitute_infer_in_angle_bracketed_arguments(generics, replacement);
-                }
-                substitute_infer_in_type_mut(&mut assoc_type.ty, replacement);
-            },
-            GenericArgument::Constraint(constraint) => {
-                if let Some(generics) = &mut constraint.generics {
-                    substitute_infer_in_angle_bracketed_arguments(generics, replacement);
-                }
-                substitute_infer_in_bounds(&mut constraint.bounds, replacement);
-            },
-            _ => {},
+        if matches!(node, Type::Infer(_)) {
+            *node = self.replacement.clone();
+        } else {
+            visit_mut::visit_type_mut(self, node);
         }
     }
 }
@@ -402,6 +308,35 @@ mod tests {
             compact(substitute_infer_in_expr(&expr, &replacement)),
             "valueas*constString"
         );
+    }
+
+    #[test]
+    fn substitutes_infer_in_qualified_self_and_const_expressions() {
+        let replacement: Type = parse_quote!(String);
+        let qualified: Type = parse_quote!(<Vec<_> as Trait>::Item);
+        assert_eq!(
+            substitute_infer_in_type(&qualified, &replacement),
+            parse_quote!(<Vec<String> as Trait>::Item)
+        );
+
+        let array: Type = parse_quote!([u8; size_of::<_>()]);
+        assert_eq!(
+            substitute_infer_in_type(&array, &replacement),
+            parse_quote!([u8; size_of::<String>()])
+        );
+
+        let path: Path = parse_quote!(Buffer<{ size_of::<_>() }>);
+        assert_eq!(
+            substitute_infer_in_path(&path, &replacement),
+            parse_quote!(Buffer<{ size_of::<String>() }>)
+        );
+    }
+
+    #[test]
+    fn substitution_leaves_macro_tokens_opaque() {
+        let input: Type = parse_quote!(SomeMacro!(_));
+        let replacement: Type = parse_quote!(String);
+        assert_eq!(substitute_infer_in_type(&input, &replacement), input);
     }
 
     #[test]

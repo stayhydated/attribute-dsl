@@ -3,6 +3,9 @@
 mod chain;
 mod infer;
 
+#[cfg(test)]
+mod property_tests;
+
 pub use chain::{
     AttributeChain, ChainCall, ChainCompletion, ChainEntry, ChainList, ChainParseOptions,
     CompletionProbeParsing, DEFAULT_COMPLETION_MARKER, NamedChainGroup,
