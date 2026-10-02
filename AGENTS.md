@@ -10,6 +10,7 @@ commands. `README.md` is included as the crate documentation.
 | --- | --- |
 | `src/chain.rs` | Public chain, entry, list, and group parsers; completion options and markers; inline parser tests. |
 | `src/infer.rs` | Public terminal type-argument splitting and infer substitution; inline syntax tests. |
+| `src/property_tests.rs` | Bounded chain and type syntax models, completion properties, and substitution regressions. |
 | `examples/derive_field_attrs.rs` | Executable derive-style expansion example. |
 | `book/src/` | User guidance for parsing, completion, substitution, and expansion. |
 | `skills/use-attribute-dsl/` | Consumer integration skill and its concrete patterns. |
@@ -30,6 +31,11 @@ commands. `README.md` is included as the crate documentation.
 - Infer substitution traverses parsed type nodes with `syn::visit_mut`.
   Preserve input trees and opaque macro tokens, and stop after replacing `_`
   so placeholders inside the replacement are not substituted again.
+- Property tests construct expected syntax independently of the production
+  visitor. Keep generators bounded and shrink whole syntax nodes. Substitution
+  is idempotent only when the replacement has no parsed infer placeholders;
+  opaque macro tokens may still contain `_`. Keep minimized failing seeds and
+  add focused regressions for contract failures.
 - Export public API changes through `src/lib.rs`. Keep
   `examples/derive_field_attrs.rs` and `book/src/proc_macro_expansion.md`
   aligned when the expansion workflow changes.
@@ -43,6 +49,9 @@ commands. `README.md` is included as the crate documentation.
 ## Validate the changed surface
 
 - Parser or infer behavior: `cargo test -p attribute-dsl --lib --locked`.
+- Property suite: `cargo test -p attribute-dsl --lib property_tests --locked`.
+  It defaults to 64 cases per property; use `PROPTEST_CASES=512` with that
+  command for a larger local run. `PROPTEST_RNG_SEED` can replay a chosen seed.
 - Derive-style example: `cargo run -p attribute-dsl --example derive_field_attrs --locked`.
 - README or crate examples: `cargo test -p attribute-dsl --doc --locked`.
   `just test-docs` builds and opens rustdoc; it does not execute doctests.

@@ -36,6 +36,9 @@ proc-macro2 = "1.0"
 quote = "1.0"
 syn = { features = [ "extra-traits", "full", "parsing", "printing", "visit-mut" ], version = "3.0" }
 
+[dev-dependencies]
+proptest = { default-features = false, features = [ "std" ], version = "1.11" }
+
 [lints]
 workspace = true
 
