@@ -24,6 +24,12 @@ commands. `README.md` is included as the crate documentation.
 - Infer changes belong with the supported syntax cases in `src/infer.rs`.
   Keep `book/src/infer_placeholders.md` and affected expansion examples and
   skill patterns aligned.
+- Chain roots store a `syn::Path`. Reject qualified-self roots instead of
+  dropping their qualification; qualified-self expressions remain valid in
+  call arguments. Cover normal parsing and completion recovery together.
+- Infer substitution traverses parsed type nodes with `syn::visit_mut`.
+  Preserve input trees and opaque macro tokens, and stop after replacing `_`
+  so placeholders inside the replacement are not substituted again.
 - Export public API changes through `src/lib.rs`. Keep
   `examples/derive_field_attrs.rs` and `book/src/proc_macro_expansion.md`
   aligned when the expansion workflow changes.

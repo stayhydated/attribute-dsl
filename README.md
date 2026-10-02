@@ -49,8 +49,7 @@ fn main() -> syn::Result<()> {
             .segments
             .last()
             .expect("a parsed path has a segment")
-            .ident
-            .to_string(),
+            .ident,
         "RootType"
     );
     assert_eq!(chain.calls().len(), 2);
