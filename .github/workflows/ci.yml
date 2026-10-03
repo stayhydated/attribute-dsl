@@ -187,7 +187,7 @@ jobs:
           version: "v0.16.0"
 
       - name: Publish unpublished crate versions
-        uses: release-plz/action@v0.5.133
+        uses: release-plz/action@v0.5.139
         with:
           command: release
           version: 0.3.162
