@@ -17,6 +17,7 @@ check:
 
 test:
     cargo test --workspace --all-features --all-targets --locked
+    cargo test --workspace --all-features --doc --locked
 
 cov:
     cargo llvm-cov --workspace --all-features --all-targets --locked
@@ -32,9 +33,9 @@ book:
     mdbook serve book
 
 web-build:
-    cargo xtask build book
-    cargo xtask build llms-txt
-    cargo xtask build web
+    cargo run --package xtask --locked -- build book
+    cargo run --package xtask --locked -- build llms-txt
+    cargo run --package xtask --locked -- build web
 
 web: web-build
     dx serve --package web
