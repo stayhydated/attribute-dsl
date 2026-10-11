@@ -9,6 +9,14 @@ fmt:
     taplo fmt
     rumdl fmt .
 
+quality:
+    cargo sort-derives --check
+    taplo fmt --check
+    rumdl check .
+    typos
+    actionlint
+    git ls-files -z '*.sh' '*.bash' | xargs -0 --no-run-if-empty shellcheck
+
 clippy:
     cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
 
@@ -43,5 +51,5 @@ web: web-build
 web-preview: web-build
     cargo xtask preview web
 
-ci: fmt check clippy test cov test-publish
+ci: fmt quality check clippy test cov test-publish
     cargo machete

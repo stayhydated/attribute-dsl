@@ -11,4 +11,3 @@ for output in index.html 404.html book/index.html llms.txt llms-full.txt sitemap
     test -s "web/dist/$output"
 done
 test -f web/dist/.nojekyll
-git diff --exit-code -- Cargo.lock

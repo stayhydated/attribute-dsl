@@ -65,7 +65,8 @@ commands. `README.md` is included as the crate documentation.
   `just web-preview` to inspect the assembled site.
 
 Use the relevant `just check`, `just clippy`, and `just test` recipes for
-workspace Rust changes. `.github/workflows/ci.yml` defines the merge checks;
+workspace Rust changes. `just quality` checks derive order, TOML, Markdown, spelling, workflows, and shell
+without modifying files. `.github/workflows/ci.yml` defines the merge checks;
 `just ci` also runs formatting commands that modify files.
 
 For book snippets, use a fresh target directory so rustdoc can resolve one
