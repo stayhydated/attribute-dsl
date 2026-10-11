@@ -69,6 +69,9 @@ workspace Rust changes. `just quality` checks derive order, TOML, Markdown, spel
 without modifying files. `.github/workflows/ci.yml` defines the merge checks;
 `just ci` also runs formatting commands that modify files.
 
+Use actionlint 1.7.12 locally, matching CI's
+`rhysd/actionlint:1.7.12` container tag.
+
 For book snippets, use a fresh target directory so rustdoc can resolve one
 build of each dependency:
 
