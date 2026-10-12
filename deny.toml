@@ -1,0 +1,10 @@
+# Check the locked workspace for advisories and unexpected dependency sources.
+# License acceptance needs a project policy; this gate does not invent one.
+[advisories]
+# UNMAINTAINED only fails for direct dependencies of workspace crates.
+unmaintained = "workspace"
+
+[sources]
+allow-git = [ "https://github.com/DioxusLabs/components", "https://github.com/stayhydated/shared" ]
+unknown-git = "deny"
+unknown-registry = "deny"
