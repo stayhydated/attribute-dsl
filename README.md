@@ -11,7 +11,7 @@ named groups. Authors of derive and attribute macros can preserve Rust syntax
 while supporting rust-analyzer completion probes and `_` placeholders for
 application-owned subject types.
 
-Requires Rust 1.99 or newer (edition 2024).
+Requires Rust 1.99 or newer. Its public syntax nodes use `syn` 3.
 
 ## Overview
 
@@ -25,45 +25,45 @@ Requires Rust 1.99 or newer (edition 2024).
 Consumers keep ownership of domain validation, constructors, and generated
 Rust.
 
-Chain roots must fit in a `syn::Path`; qualified-self roots such as
-`<T as Trait>::Builder` return a parse error. Type substitution traverses parsed
-type nodes, including qualified-self types and types in const expressions,
-while leaving macro token bodies and placeholders in the replacement unchanged.
+See the [API reference][api] for accepted syntax, completion options, and
+substitution boundaries.
 
 ## Example
 
-Parse an attribute chain through `syn`:
+Parse a `syn::Attribute` in a proc-macro expansion function, then substitute
+the annotated subject type into its root. This complete example preserves the
+`label` call and resolves `TextFilter::<_>` to `TextFilter::<String>`:
 
 ```rust
-use std::assert_matches;
-
-use attribute_dsl::{AttributeChain, ChainCompletion};
+use attribute_dsl::{AttributeChain, substitute_infer_in_path};
+use syn::parse_quote;
 
 fn main() -> syn::Result<()> {
-    let chain: AttributeChain =
-        syn::parse_str("RootType::<_>.first(1).second::<String>(\"value\")")?;
+    let attr: syn::Attribute = parse_quote! {
+        #[column(TextFilter::<_>.label("Name"))]
+    };
+    let chain = attr.parse_args::<AttributeChain>()?;
+    let subject: syn::Type = parse_quote!(String);
+    let root = substitute_infer_in_path(chain.root_path(), &subject);
 
-    assert_eq!(
-        chain
-            .root_path()
-            .segments
-            .last()
-            .expect("a parsed path has a segment")
-            .ident,
-        "RootType"
-    );
-    assert_eq!(chain.calls().len(), 2);
-    assert_matches!(chain.completion(), ChainCompletion::None);
-
+    assert_eq!(root, parse_quote!(TextFilter::<String>));
+    assert_eq!(chain.calls().len(), 1);
+    assert_eq!(chain.calls()[0].method(), "label");
+    assert!(!chain.has_completion_probe());
     Ok(())
 }
 ```
 
+The [derive-style expansion example][derive-example] shows how a consumer
+quotes the root, calls, and a typed completion probe into generated Rust.
+
 [ci-badge]: https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml/badge.svg?branch=master
 [ci]: https://github.com/stayhydated/attribute-dsl/actions/workflows/ci.yml
-[codecov-badge]: https://codecov.io/github/stayhydated/attribute-dsl/graph/badge.svg
-[codecov]: https://codecov.io/github/stayhydated/attribute-dsl
+[codecov-badge]: https://codecov.io/gh/stayhydated/attribute-dsl/branch/master/graph/badge.svg
+[codecov]: https://codecov.io/gh/stayhydated/attribute-dsl
 [book-badge]: https://img.shields.io/badge/Book-mdBook-blue
 [book]: https://stayhydated.github.io/attribute-dsl/book/
 [crate-badge]: https://img.shields.io/crates/v/attribute-dsl.svg?label=attribute-dsl
 [crate]: https://crates.io/crates/attribute-dsl
+[api]: https://docs.rs/attribute-dsl/latest/attribute_dsl/
+[derive-example]: https://github.com/stayhydated/attribute-dsl/blob/master/examples/derive_field_attrs.rs
