@@ -211,7 +211,10 @@ mod tests {
         assert!(error.to_string().contains("expected validator path"));
 
         let mut path: Path = parse_quote!(crate::RangeValidation::<i32>);
-        let segment = path.segments.last_mut().expect("a parsed path has a segment");
+        let segment = path
+            .segments
+            .last_mut()
+            .expect("a parsed path has a segment");
         let PathArguments::AngleBracketed(arguments) = &mut segment.arguments else {
             panic!("the test path has angle-bracketed arguments");
         };
@@ -219,7 +222,9 @@ mod tests {
         let error = split_terminal_single_type_arg(path, "validator")
             .expect_err("empty angle brackets are not absent arguments");
         assert!(
-            error.to_string().contains("expects exactly one type argument"),
+            error
+                .to_string()
+                .contains("expects exactly one type argument"),
             "{error}"
         );
     }
