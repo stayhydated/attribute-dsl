@@ -34,7 +34,13 @@ repository = "https://github.com/stayhydated/attribute-dsl"
 [dependencies]
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
-syn = { features = [ "extra-traits", "full", "parsing", "printing", "visit-mut" ], version = "3.0.9" }
+syn = { features = [
+  "extra-traits",
+  "full",
+  "parsing",
+  "printing",
+  "visit-mut",
+], version = "3.0.9" }
 
 [dev-dependencies]
 proptest = { default-features = false, features = [ "std" ], version = "1.12.0" }
