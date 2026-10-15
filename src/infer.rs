@@ -36,8 +36,8 @@ impl SingleTypeArg {
 /// # Errors
 ///
 /// Returns [`syn::Error`] when the path has no final segment, the final segment
-/// has more than one generic argument, the argument is not a type, or the final
-/// segment uses parenthesized generic arguments.
+/// has angle brackets without exactly one argument, the argument is not a type,
+/// or the final segment uses parenthesized generic arguments.
 pub fn split_terminal_single_type_arg(
     mut path: Path,
     subject: &str,
@@ -198,6 +198,45 @@ mod tests {
                 .contains("validator path does not support parenthesized arguments"),
             "{err}"
         );
+    }
+
+    #[test]
+    fn rejects_empty_path_and_empty_terminal_arguments() {
+        let empty_path = Path {
+            leading_colon: None,
+            segments: Default::default(),
+        };
+        let error = split_terminal_single_type_arg(empty_path, "validator")
+            .expect_err("an empty path has no terminal segment");
+        assert!(error.to_string().contains("expected validator path"));
+
+        let mut path: Path = parse_quote!(crate::RangeValidation::<i32>);
+        let segment = path.segments.last_mut().expect("a parsed path has a segment");
+        let PathArguments::AngleBracketed(arguments) = &mut segment.arguments else {
+            panic!("the test path has angle-bracketed arguments");
+        };
+        arguments.args.clear();
+        let error = split_terminal_single_type_arg(path, "validator")
+            .expect_err("empty angle brackets are not absent arguments");
+        assert!(
+            error.to_string().contains("expects exactly one type argument"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn substitution_preserves_expression_placeholders() {
+        let input: Expr = parse_quote!({
+            let _: Option<_> = None;
+            _ = value;
+        });
+        let replacement: Type = parse_quote!(String);
+        let expected: Expr = parse_quote!({
+            let _: Option<String> = None;
+            _ = value;
+        });
+
+        assert_eq!(substitute_infer_in_expr(&input, &replacement), expected);
     }
 
     #[test]
