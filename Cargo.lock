@@ -139,7 +139,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "attribute-dsl"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "proc-macro2",
  "proptest",
@@ -4472,7 +4472,7 @@ dependencies = [
 
 [[package]]
 name = "web"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "dioxus",
  "stayhydated-dioxus",
@@ -4969,7 +4969,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 
 [[package]]
 name = "xtask"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "clap",
