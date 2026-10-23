@@ -260,18 +260,18 @@ dependencies = [
 
 [[package]]
 name = "bon"
-version = "3.10.2"
+version = "3.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "214f5df094ce551a10a30ffb9c70243d61f121a3d985a6495933e181dee6a7d2"
+checksum = "a05442cd7005532d0cfedec676b5b9333d2b4c7c3afabe2b1a9ce2742fbe2ee6"
 dependencies = [
  "bon-macros",
 ]
 
 [[package]]
 name = "bon-macros"
-version = "3.10.2"
+version = "3.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2706da6c749998cc555d04184909608956a69ad3f8ab1a076fbc867b4a3c3ce5"
+checksum = "93833e97ac7c46ba97045afcf247238c27057538fcf2f06344662ddd5f567be6"
 dependencies = [
  "darling 0.24.1",
  "ident_case",
@@ -3387,9 +3387,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.15"
+version = "0.103.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
+checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -3693,8 +3693,8 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stayhydated-dioxus"
-version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=3136b369bb54312096ad83ba74735aab29109835#3136b369bb54312096ad83ba74735aab29109835"
+version = "0.1.1"
+source = "git+https://github.com/stayhydated/shared?rev=b3f91071b4e61702a63f57844560f70bbc9bf623#b3f91071b4e61702a63f57844560f70bbc9bf623"
 dependencies = [
  "bon",
  "dioxus",
@@ -3707,8 +3707,8 @@ dependencies = [
 
 [[package]]
 name = "stayhydated-dioxus-core"
-version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=3136b369bb54312096ad83ba74735aab29109835#3136b369bb54312096ad83ba74735aab29109835"
+version = "0.1.1"
+source = "git+https://github.com/stayhydated/shared?rev=b3f91071b4e61702a63f57844560f70bbc9bf623#b3f91071b4e61702a63f57844560f70bbc9bf623"
 dependencies = [
  "bytemuck",
  "derive_more",
@@ -3724,8 +3724,8 @@ dependencies = [
 
 [[package]]
 name = "stayhydated-site"
-version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=3136b369bb54312096ad83ba74735aab29109835#3136b369bb54312096ad83ba74735aab29109835"
+version = "0.1.1"
+source = "git+https://github.com/stayhydated/shared?rev=b3f91071b4e61702a63f57844560f70bbc9bf623#b3f91071b4e61702a63f57844560f70bbc9bf623"
 dependencies = [
  "derive_more",
  "dioxus",
@@ -3734,8 +3734,8 @@ dependencies = [
 
 [[package]]
 name = "stayhydated-xtask"
-version = "0.1.0"
-source = "git+https://github.com/stayhydated/shared?rev=3136b369bb54312096ad83ba74735aab29109835#3136b369bb54312096ad83ba74735aab29109835"
+version = "0.1.1"
+source = "git+https://github.com/stayhydated/shared?rev=b3f91071b4e61702a63f57844560f70bbc9bf623#b3f91071b4e61702a63f57844560f70bbc9bf623"
 dependencies = [
  "anyhow",
  "bon",
