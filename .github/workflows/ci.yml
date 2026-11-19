@@ -31,7 +31,13 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Disable rustc wrapper on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo 'RUSTC_WRAPPER=' >> "$GITHUB_ENV"
+
       - name: Setup sccache
+        if: runner.os != 'Windows'
         uses: mozilla-actions/sccache-action@v0.0.11
         with:
           version: "v0.16.0"
