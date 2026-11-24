@@ -8,16 +8,16 @@ license = "MIT OR Apache-2.0"
 publish = true
 readme = "README.md"
 repository = "https://github.com/stayhydated/attribute-dsl"
-rust-version = "1.99"
+rust-version = "1.100"
 version = "0.2.4"
 
 [workspace.dependencies]
-anyhow = "1.0.104"
-clap = { features = [ "derive" ], version = "4.6.7" }
+anyhow = "1.0.105"
+clap = { features = [ "derive" ], version = "4.6.9" }
 dioxus = { default-features = false, version = "0.7.10" }
-stayhydated-dioxus = { git = "https://github.com/stayhydated/shared", rev = "1569baacf4fb2a94bbf7d9f02615332407e104df" }
-stayhydated-site = { git = "https://github.com/stayhydated/shared", rev = "1569baacf4fb2a94bbf7d9f02615332407e104df" }
-stayhydated-xtask = { git = "https://github.com/stayhydated/shared", rev = "1569baacf4fb2a94bbf7d9f02615332407e104df" }
+stayhydated-dioxus = { git = "https://github.com/stayhydated/shared", rev = "80f892468145d54e0d89bb71e14a81f71a156fdb" }
+stayhydated-site = { git = "https://github.com/stayhydated/shared", rev = "80f892468145d54e0d89bb71e14a81f71a156fdb" }
+stayhydated-xtask = { git = "https://github.com/stayhydated/shared", rev = "80f892468145d54e0d89bb71e14a81f71a156fdb" }
 web = { path = "web" }
 
 [package]
@@ -29,7 +29,7 @@ license.workspace = true
 publish.workspace = true
 readme.workspace = true
 description = "Shared parser helpers for Rust attribute DSLs built from paths and dot-call chains."
-repository = "https://github.com/stayhydated/attribute-dsl"
+repository.workspace = true
 
 [dependencies]
 proc-macro2 = "1.0.107"
@@ -40,7 +40,7 @@ syn = { features = [
   "parsing",
   "printing",
   "visit-mut",
-], version = "3.0.9" }
+], version = "3.0.10" }
 
 [dev-dependencies]
 proptest = { default-features = false, features = [ "std" ], version = "1.12.0" }

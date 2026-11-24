@@ -11,7 +11,7 @@ named groups. Authors of derive and attribute macros can preserve Rust syntax
 while supporting rust-analyzer completion probes and `_` placeholders for
 application-owned subject types.
 
-Requires Rust 1.99 or newer. Its public syntax nodes use `syn` 3.
+Requires Rust 1.100 or newer. Its public syntax nodes use `syn` 3.
 
 ## Overview
 

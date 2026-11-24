@@ -11,7 +11,9 @@ findings without editing the consumer.
 ## Establish the consumer contract
 
 1. Read the consumer's attribute parsing, expansion, tests, and dependency
-   versions. `attribute-dsl` 0.2 exposes `syn` 3 nodes and requires Rust 1.99.
+   versions. `attribute-dsl` 0.2 exposes `syn` 3 nodes. Read the pinned
+   release manifest for its minimum Rust version; this checkout uses Rust
+   1.100.
 2. Identify the complete accepted argument shape.
 3. Determine whether `_` represents a subject type and whether trailing-dot input
    must produce rust-analyzer completion.
