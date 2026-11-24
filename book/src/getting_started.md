@@ -5,7 +5,7 @@ implementation crate.
 
 ## Prerequisites
 
-- Rust 1.99 or newer.
+- Rust 1.100 or newer.
 - A derive-macro or attribute-macro implementation crate.
 - A clear grammar for the attribute accepted by that macro.
 
